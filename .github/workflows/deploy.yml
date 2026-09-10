@@ -141,8 +141,8 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             "$CPANEL_USER@$CPANEL_HOST" \
             "cd '$CPANEL_PATH' &&
-             php artisan package:discover --ansi &&
-             php artisan optimize:clear &&
-             php artisan config:cache &&
-             php artisan view:cache &&
-             chmod -R ug+rwX storage bootstrap/cache"
+            rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php &&
+            php artisan package:discover --ansi &&
+            php artisan config:cache &&
+            php artisan view:cache &&
+            chmod -R ug+rwX storage bootstrap/cache"
