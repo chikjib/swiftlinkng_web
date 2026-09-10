@@ -2210,7 +2210,7 @@ public function gtechPortal($network_id, $phone, $plan_id)
             "title" => "Switflink Bank Card Payment",
             "description" => "Purchase with bank transfer",
             "currency" => "NGN",
-            "callBackUrl" => "https://swiftlinkng.com/palmpay-webhook",
+            "callBackUrl" => "https://swiftlinkng.com/dashboard/callback",
             "userId" => $email,
             "userMobileNo" => $phone,
              "goodsDetails" => json_encode([
