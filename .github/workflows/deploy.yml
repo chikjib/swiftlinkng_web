@@ -93,9 +93,9 @@ jobs:
         shell: bash
         run: |
           install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$CPANEL_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/swiftlink_deploy"
+          printf '%s\n' "$CPANEL_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/id_rsa_github"
           printf '%s\n' "$CPANEL_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/swiftlink_deploy"
+          chmod 600 "$HOME/.ssh/id_rsa_github"
           chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Upload application to public_html
@@ -103,7 +103,7 @@ jobs:
         shell: bash
         run: |
           rsync -az \
-            -e "ssh -i $HOME/.ssh/swiftlink_deploy -p $CPANEL_PORT" \
+            -e "ssh -i $HOME/.ssh/id_rsa_github -p $CPANEL_PORT" \
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='.env*' \
@@ -129,7 +129,7 @@ jobs:
         shell: bash
         run: |
           ssh \
-            -i "$HOME/.ssh/swiftlink_deploy" \
+            -i "$HOME/.ssh/id_rsa_github" \
             -p "$CPANEL_PORT" \
             "$CPANEL_USER@$CPANEL_HOST" \
             "cd '$CPANEL_PATH' &&
