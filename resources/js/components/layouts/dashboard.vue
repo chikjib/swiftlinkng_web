@@ -111,7 +111,7 @@ export default {
   watch: {
     "$route.fullPath"() {
       this.syncCustomerTheme();
-      if (window.innerWidth < 768) this.sidebarToggled = false;
+      if (this.isAdminRoute || window.innerWidth < 768) this.sidebarToggled = false;
     },
   },
   created() {
@@ -295,6 +295,47 @@ html.swift-dashboard-page-scroll {
     margin-left: 0 !important;
     transform: none !important;
   }
+}
+
+/* Admin navigation is an overlay at every viewport size. It stays out of the
+   page flow so opening it never pushes or clips the dashboard. */
+.swift-dashboard-shell.swift-admin-shell .swift-sidebar--admin {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 1080;
+  display: flex;
+  width: min(86vw, var(--swift-sidebar-width, 260px)) !important;
+  min-width: min(86vw, var(--swift-sidebar-width, 260px)) !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  flex-basis: auto !important;
+  align-content: flex-start;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  transform: translateX(-105%) !important;
+}
+
+.swift-dashboard-shell.swift-admin-shell.sidebar-toggled .swift-sidebar--admin {
+  margin-left: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  transform: translateX(0) !important;
+}
+
+.swift-admin-shell .swift-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1075;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: rgba(10, 11, 14, .58);
+  border: 0;
 }
 
 .sidebar .nav-item .router-link-exact-active {

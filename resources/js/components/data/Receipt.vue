@@ -5,7 +5,7 @@
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
       >
         <div class="col-md-12">
-          <table class="table">
+          <table class="table swift-receipt-table">
             <tbody>
             <tr>
               <td colspan="2">
@@ -168,8 +168,8 @@ export default {
 
           this.isloading = false;
         })
-        .catch(({ response }) => {
-          this.$toasted.show(error.response.data.data);
+        .catch((error) => {
+          this.$toasted.show(error.response?.data?.data || "Unable to load receipt");
           this.isloading = false;
         });
     },
@@ -257,5 +257,22 @@ li a {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.swift-receipt-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.swift-receipt-table th {
+  width: 34%;
+}
+
+.swift-receipt-table th,
+.swift-receipt-table td {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 </style>

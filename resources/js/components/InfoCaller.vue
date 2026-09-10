@@ -81,7 +81,11 @@ export default {
 }
 
 .referral-promo-modal .modal-dialog {
+  display: flex;
+  align-items: center;
   max-width: 520px;
+  min-height: calc(100% - 36px);
+  margin: 18px auto;
   padding: 18px;
 }
 
@@ -236,6 +240,19 @@ export default {
 .promo-confetti-right { right: 30px; transform: rotate(-25deg); }
 
 @media (max-width: 480px) {
+  .referral-promo-modal .modal-dialog.modal-dialog-centered {
+    align-items: center;
+    width: 100%;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 14px;
+  }
+
+  .referral-promo-card {
+    max-height: calc(100dvh - 28px);
+    overflow-y: auto;
+  }
+
   .referral-promo-card { padding: 40px 18px 24px; border-radius: 22px; }
   .promo-gifts { min-height: 88px; font-size: 50px; }
   .promo-main-gift { font-size: 76px; }

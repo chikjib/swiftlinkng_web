@@ -1582,22 +1582,54 @@ input[type="radio"] {
   overflow-y: hidden;
 }
 .swift-admin-scroll-table {
-  width: max-content !important;
-  min-width: 100%;
-  table-layout: auto !important;
-  white-space: nowrap !important;
+  width: 100% !important;
+  min-width: 980px;
+  table-layout: fixed !important;
+  white-space: normal !important;
 }
 .swift-admin-scroll-table th,
 .swift-admin-scroll-table td,
 .swift-admin-scroll-table .box,
 .swift-admin-scroll-table .swift-reference-cell {
   width: auto !important;
-  max-width: none !important;
-  white-space: nowrap !important;
-  overflow-wrap: normal !important;
-  word-break: normal !important;
+  max-width: 170px !important;
+  padding: 8px 7px !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  vertical-align: top;
 }
-.swift-admin-scroll-table .btn-group { flex-wrap: nowrap; }
+.swift-admin-scroll-table .btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  white-space: normal;
+}
+
+.swift-admin-scroll-table .btn {
+  margin: 0 !important;
+  padding: 6px 8px;
+  white-space: normal;
+}
+
+.swift-user-transactions-table,
+.swift-admin-users-table {
+  min-width: 900px;
+}
+
+.swift-admin-transactions-table {
+  min-width: 1080px;
+}
+
+.swift-admin-users-table th:last-child,
+.swift-admin-users-table td:last-child,
+.swift-user-transactions-table th:last-child,
+.swift-user-transactions-table td:last-child,
+.swift-admin-transactions-table th:last-child,
+.swift-admin-transactions-table td:last-child {
+  width: 160px !important;
+  max-width: 160px !important;
+}
 
 @keyframes swift-sheet-in {
   from { opacity: .75; transform: translateY(28px); }

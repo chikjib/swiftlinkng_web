@@ -5,7 +5,10 @@
     class="navbar-nav sidebar sidebar-light accordion swift-sidebar"
     :class="[
       isAdmin ? 'swift-sidebar--admin' : 'swift-sidebar--customer',
-      { toggled: isOpen },
+      {
+        toggled: isOpen && !isAdmin,
+        'swift-sidebar-is-open': isOpen,
+      },
     ]"
     id="accordionSidebar"
   >

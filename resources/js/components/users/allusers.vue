@@ -51,7 +51,7 @@
             </div>
 
             <div class="table-responsive pt-3 swift-admin-scroll-table-wrap">
-              <table class="table table-bordered swift-admin-scroll-table">
+              <table class="table table-bordered swift-admin-scroll-table swift-compact-table swift-admin-users-table">
                 <thead>
                   <tr>
                     <th>ID</th>
