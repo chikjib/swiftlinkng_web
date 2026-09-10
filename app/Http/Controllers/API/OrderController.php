@@ -1049,7 +1049,7 @@ class OrderController extends BaseController
         return "234" . $number;
     }
     
-    public function purchaseTalkmore(Request $request)
+      public function purchaseTalkmore(Request $request)
     {
         $subcategory = Subcategory::where('id', $request->subcategory_id)
             ->where('category_id', 13)
@@ -1064,8 +1064,7 @@ class OrderController extends BaseController
 
         return $this->purchaseData($request);
     }
-    
-        
+       
 
     public function purchaseData(Request $request)
     {
@@ -7330,13 +7329,7 @@ class OrderController extends BaseController
                 
 
                 try {
-                     \Log::info("ZOE DATA PORTAL RESPONSE REQUEST");
-                \Log::info($phone);
-                \Log::info($product_code);
-                \Log::info($ref);
                     $response = $this->zoeDataPortal($product_code, $phone, $ref);
-                     \Log::info("ZOE DATA PORTAL RESPONSE REQUEST");
-                \Log::info($response);
 
                 } catch (\Throwable $e) {
                     return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
