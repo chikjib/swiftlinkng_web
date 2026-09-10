@@ -1,0 +1,90 @@
+*.ftpquota
+*.ftp
+/.ftp-deploy-sync-state.json
+/cookie.txt
+/cookie*.txt
+/MMM
+/airtel_cron.php
+/storage/logs/*.log
+
+# =========================
+
+# Laravel Core
+
+# =========================
+
+/vendor
+/node_modules
+/public/storage
+/storage/*.key
+/storage/app/*
+!/storage/app/.gitignore
+# =========================
+
+# Environment Files
+
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+
+# Laravel Cache & Logs
+
+# =========================
+
+/bootstrap/cache/*.php
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# =========================
+
+# Testing
+
+# =========================
+
+/phpunit.xml
+/.phpunit.result.cache
+
+# =========================
+
+# Build / Frontend
+
+# =========================
+
+/public/hot
+/public/build
+/public/mix-manifest.json
+
+# =========================
+
+# OS / Editor Files
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# VS Code
+
+.vscode/
+
+# PHPStorm
+
+.idea/
+
+# =========================
+
+# Misc
+
+# =========================
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

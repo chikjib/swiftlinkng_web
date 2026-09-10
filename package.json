@@ -1,0 +1,52 @@
+{
+    "private": true,
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "prod": "npm run build",
+        "production": "npm run build"
+    },
+    "devDependencies": {
+        "@popperjs/core": "^2.10.2",
+        "@types/google.maps": "^3.48.7",
+        "@vitejs/plugin-vue": "^6.0.8",
+        "@vue/compat": "^3.5.42",
+        "@vue/compiler-sfc": "^3.5.42",
+        "axios": "^0.25",
+        "bootstrap": "^5.2.1",
+        "dotenv": "^16.0.1",
+        "laravel-vite-plugin": "^3.2.0",
+        "lodash": "^4.17.19",
+        "postcss": "^8.1.14",
+        "sass": "^1.104.0",
+        "vite": "^8.2.2",
+        "vue": "^3.5.42"
+    },
+    "dependencies": {
+        "chart.js": "^2.9.4",
+        "datatables.net-dt": "^1.12.1",
+        "firebase": "^9.6.11",
+        "jquery": "^3.6.1",
+        "md5": "^2.3.0",
+        "moment": "^2.29.3",
+        "numeral": "^2.0.6",
+        "shetabit-laravel-vue-pagination": "^2.3.7",
+        "v-idle": "^0.2.1",
+        "vue-axios-cors": "^1.0.1",
+        "vue-chartjs": "^3.2.1",
+        "vue-content-loading": "^1.6.0",
+        "vue-cookies-reactive": "^2.1.1",
+        "vue-flutterwave": "^1.0.0",
+        "vue-html-to-paper": "^1.4.4",
+        "vue-monnify": "^1.0.1",
+        "vue-resource": "^1.5.3",
+        "vue-router": "^5.3.1",
+        "vue-toasted": "^1.1.28",
+        "vue2-gmap-custom-marker": "^6.0.1",
+        "vue2-google-maps": "^0.10.7",
+        "vuejs-datepicker": "^1.6.2",
+        "vuex": "^2.0.0",
+        "vuex-persistedstate": "^3.2.0"
+    }
+}

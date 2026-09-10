@@ -1,0 +1,1 @@
+<p>{{ dd($requery_response) }}</p>
