@@ -22,6 +22,7 @@ return [
     'siteEmail' => 'Swiftlinkservice@gmail.com',
     'sitePhone' => '08140003288',
     'siteUrl' => env('APP_URL'),
+    'GATE_TOKEN' => env('GATE_TOKEN'),
     'monnifyBaseUrl' => env("monnifyBaseUrl"),
     'monnifyAPIKey' => env('MIX_MONNIFYAPIKEY'),
     'monnifySecretKey' => env("monnifySecretKey"),
@@ -105,6 +106,16 @@ return [
     'olaadeUrl' => env('olaadeUrl'),
     'vtuplugToken' => env('vtuplugToken'),
     'vtuplugUrl' => env('vtuplugUrl'),
+    'naijasubToken' => env('naijasubToken'),
+    'naijasubUrl' => env('naijasubUrl'),
+    'amakasubContractId' => env('amakasubContractId'),
+    'amakasubUrl' => env('amakasubUrl'),
+    'coolsubToken' => env('coolsubToken'),
+    'coolsubUrl' => env('coolsubUrl'),
+    'zoeDataUrl' => env('zoeDataUrl'),
+    'zoeDataKey' => env('zoeDataKey'),
+    'arifToken' => env('arifToken'),
+    'arifUrl' => env('arifUrl'),
 
 
     /*
