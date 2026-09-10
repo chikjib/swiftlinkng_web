@@ -82,7 +82,7 @@ jobs:
 
       - name: Install frontend dependencies
         if: steps.preflight.outputs.ready == 'true'
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build Vite assets
         if: steps.preflight.outputs.ready == 'true'
