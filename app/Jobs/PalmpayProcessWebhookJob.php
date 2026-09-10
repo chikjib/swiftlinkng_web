@@ -39,13 +39,7 @@ class PalmpayProcessWebhookJob extends SpatieProcessWebhookJob
 
 
 
-        $signatureIsValid = $this->verifyPalmPayTrans($payload) === 1;
-        $orderStatus = (int) ($payload['orderStatus'] ?? 0);
-
-        // PalmPay pay-in status 1 is pending; status 2 is a completed payment.
-        // Crediting status 1 can run before funds settle, while waiting for 1
-        // prevents a real status-2 notification from ever funding the wallet.
-        if ($signatureIsValid && $orderStatus === 2) {
+        if ($this->verifyPalmPayTrans($payload) == 1 && $payload['orderStatus'] == 1) {
             $grossAmount = round(
                 ((float) ($response['amount'] ?? $response['orderAmount'] ?? 0)) / 100,
                 2
@@ -122,17 +116,6 @@ class PalmpayProcessWebhookJob extends SpatieProcessWebhookJob
                 app(FundingRecoveryService::class)->apply($order, 'PalmPay', $grossAmount, $charge);
             }, 3);
             
-        } elseif (!$signatureIsValid) {
-            \Log::warning('PalmPay webhook signature verification failed.', [
-                'orderId' => $payload['orderId'] ?? null,
-                'orderNo' => $payload['orderNo'] ?? null,
-            ]);
-        } elseif ($orderStatus !== 1) {
-            \Log::info('PalmPay webhook ignored because payment is not complete.', [
-                'orderId' => $payload['orderId'] ?? null,
-                'orderNo' => $payload['orderNo'] ?? null,
-                'orderStatus' => $orderStatus,
-            ]);
         }
         
         return response('success', 200)->header('Content-Type','text/plain');
