@@ -34,7 +34,7 @@
         </div>
 
         <div class="col-md-12">
-            <transition name="fade" class="swift-legacy-whatsapp">
+            <!-- <transition name="fade" class="swift-legacy-whatsapp">
                 <div v-if="visible" class="notification swift-legacy-whatsapp">
                     <div class="notification-content">
                         <div class="text-group">
@@ -55,7 +55,7 @@
                         </div>
                     </div>
                 </div>
-            </transition>
+            </transition> -->
             <div v-if="home.notice != ''" class="alert alert-danger alert-dismissible swift-dashboard-notice" role="alert">
                 <button type="button" class="close" aria-label="Close" @click="home.notice = ''">
                     <span aria-hidden="true">&times;</span>
