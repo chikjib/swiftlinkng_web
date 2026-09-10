@@ -30,10 +30,7 @@ jobs:
       MIX_APP_NAME: ${{ vars.MIX_APP_NAME }}
       MIX_SESSION_LIFETIME: ${{ vars.MIX_SESSION_LIFETIME }}
       MIX_RAVE_PUBLICKEY: ${{ secrets.MIX_RAVE_PUBLICKEY }}
-      MIX_FIREBASE_API_KEY: ${{ secrets.MIX_FIREBASE_API_KEY }}
-      MIX_FIREBASE_APP_ID: ${{ secrets.MIX_FIREBASE_APP_ID }}
-      MIX_VUE_APP_TOKEN: ${{ secrets.MIX_VUE_APP_TOKEN }}
-
+     
     steps:
       - name: Check deployment configuration
         id: preflight
