@@ -30,14 +30,14 @@ jobs:
       MIX_APP_NAME: ${{ vars.MIX_APP_NAME }}
       MIX_SESSION_LIFETIME: ${{ vars.MIX_SESSION_LIFETIME }}
       MIX_RAVE_PUBLICKEY: ${{ secrets.MIX_RAVE_PUBLICKEY }}
-     
+
     steps:
       - name: Check deployment configuration
         id: preflight
         shell: bash
         run: |
           missing=()
-          for name in CPANEL_HOST CPANEL_USER CPANEL_PORT CPANEL_PATH CPANEL_SSH_KEY CPANEL_KNOWN_HOSTS; do
+          for name in CPANEL_HOST CPANEL_USER CPANEL_PORT CPANEL_PATH CPANEL_SSH_KEY; do
             if [ -z "${!name}" ]; then
               missing+=("$name")
             fi
@@ -52,7 +52,7 @@ jobs:
 
       - name: Check out application
         if: steps.preflight.outputs.ready == 'true'
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Set up PHP
         if: steps.preflight.outputs.ready == 'true'
@@ -75,7 +75,7 @@ jobs:
 
       - name: Set up Node
         if: steps.preflight.outputs.ready == 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
@@ -88,20 +88,20 @@ jobs:
         if: steps.preflight.outputs.ready == 'true'
         run: npm run build
 
-      - name: Set up SSH Known Hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H -p ${{ secrets.CPANEL_PORT }} ${{ secrets.CPANEL_HOST }} >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
       - name: Configure SSH
         if: steps.preflight.outputs.ready == 'true'
         shell: bash
         run: |
           install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$CPANEL_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/id_rsa_github"
-          printf '%s\n' "$CPANEL_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/id_rsa_github"
+          printf '%s\n' "$CPANEL_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/swiftlink_deploy"
+          chmod 600 "$HOME/.ssh/swiftlink_deploy"
+
+          if [ -n "$CPANEL_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$CPANEL_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          fi
+          
+          # Automatically fetch missing host key if needed
+          ssh-keyscan -H -p "$CPANEL_PORT" "$CPANEL_HOST" >> "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Upload application to public_html
@@ -109,7 +109,7 @@ jobs:
         shell: bash
         run: |
           rsync -az \
-            -e "ssh -i $HOME/.ssh/id_rsa_github -p $CPANEL_PORT" \
+            -e "ssh -i $HOME/.ssh/swiftlink_deploy -p $CPANEL_PORT -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='.env*' \
@@ -135,8 +135,10 @@ jobs:
         shell: bash
         run: |
           ssh \
-            -i "$HOME/.ssh/id_rsa_github" \
+            -i "$HOME/.ssh/swiftlink_deploy" \
             -p "$CPANEL_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
             "$CPANEL_USER@$CPANEL_HOST" \
             "cd '$CPANEL_PATH' &&
              php artisan package:discover --ansi &&
