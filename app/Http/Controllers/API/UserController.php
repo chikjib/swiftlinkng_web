@@ -1950,6 +1950,8 @@ $user = auth()->user();
         $checkoutUrl = $this->firstPalmpayValue($response, [
             'checkoutUrl', 'payUrl', 'paymentUrl'
         ]);
+        $payerAccountId = $this->firstPalmpayValue($response, ['payerAccountId']);
+        $orderNo = $this->firstPalmpayValue($response, ['orderNo']);
 
         if (!$successful || ($accountNumber === null && $checkoutUrl === null)) {
             $message = $responseMessage !== ''
@@ -1973,7 +1975,11 @@ $user = auth()->user();
                 $order->subtotal = $amount;
                 $order->total = $amount;
                 $order->description = 'PalmPay One-Time Account Pending';
-                $order->response = 'Waiting for payment confirmation.';
+                $order->response = json_encode([
+                    'message' => 'Waiting for payment confirmation.',
+                    'payerAccountId' => $payerAccountId,
+                    'orderNo' => $orderNo,
+                ], JSON_UNESCAPED_SLASHES);
                 $order->channel = 'App';
                 $order->status = 0;
                 $order->save();
@@ -1989,7 +1995,8 @@ $user = auth()->user();
                 'payerBankName', 'bankName'
             ]) ?? 'PalmPay',
             'checkoutUrl' => $checkoutUrl,
-            'orderNo' => $this->firstPalmpayValue($response, ['orderNo']),
+            'payerAccountId' => $payerAccountId,
+            'orderNo' => $orderNo,
             'orderId' => $this->firstPalmpayValue($response, ['orderId']) ?? $customerReference,
             'expiresIn' => 2700,
         ], "One-time account generated successfully");

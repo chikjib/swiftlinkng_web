@@ -49,19 +49,35 @@ class PalmpayProcessWebhookJob extends SpatieProcessWebhookJob
             $virtualAccount = (string) (
                 $response['virtualAccountNo'] ?? $response['payerVirtualAccNo'] ?? ''
             );
+            $payerAccountId = trim((string) (
+                $response['payerAccountId'] ?? ($response['data']['payerAccountId'] ?? '')
+            ));
 
             DB::transaction(function () use (
                 $grossAmount,
                 $merchantReference,
                 $gatewayReference,
-                $virtualAccount
+                $virtualAccount,
+                $payerAccountId
             ) {
                 // PalmPay sends our temporary-account reference as orderId;
                 // orderNo is PalmPay's own platform reference.
                 $intent = $merchantReference !== ''
                     ? Order::where('ref', $merchantReference)->first()
                     : null;
-                $reference = $intent ? $merchantReference : $gatewayReference;
+
+                // One-time bank-transfer notifications can be correlated by
+                // PalmPay's temporary account id or platform order number.
+                // Keep this as a fallback so the existing permanent-account
+                // and merchant orderId paths remain unchanged.
+                if (!$intent && ($payerAccountId !== '' || $gatewayReference !== '')) {
+                    $intent = $this->findOneTimePalmpayIntent(
+                        $payerAccountId,
+                        $gatewayReference
+                    );
+                }
+
+                $reference = $intent ? (string) $intent->ref : $gatewayReference;
                 if ($reference === '' || $grossAmount <= 0) {
                     throw new \RuntimeException('PalmPay webhook is missing required payment details.');
                 }
@@ -119,6 +135,50 @@ class PalmpayProcessWebhookJob extends SpatieProcessWebhookJob
         }
         
         return response('success', 200)->header('Content-Type','text/plain');
+    }
+
+    private function findOneTimePalmpayIntent(
+        string $payerAccountId,
+        string $orderNo
+    ): ?Order {
+        $query = Order::query()
+            ->where('plan', 'PalmPay One-Time Account')
+            ->where('status', 0);
+
+        $query->where(function ($referenceQuery) use ($payerAccountId, $orderNo) {
+            if ($payerAccountId !== '') {
+                $referenceQuery->where('response', 'like', '%' . $payerAccountId . '%');
+            }
+
+            if ($orderNo !== '') {
+                $method = $payerAccountId !== '' ? 'orWhere' : 'where';
+                $referenceQuery->{$method}('response', 'like', '%' . $orderNo . '%');
+            }
+        });
+
+        return $query->lockForUpdate()->get()->first(
+            fn (Order $order) => $this->matchesOneTimePalmpayReferences(
+                $order,
+                $payerAccountId,
+                $orderNo
+            )
+        );
+    }
+
+    private function matchesOneTimePalmpayReferences(
+        Order $order,
+        string $payerAccountId,
+        string $orderNo
+    ): bool {
+        $references = json_decode((string) $order->response, true);
+        if (!is_array($references)) {
+            return false;
+        }
+
+        return ($payerAccountId !== ''
+                && hash_equals((string) ($references['payerAccountId'] ?? ''), $payerAccountId))
+            || ($orderNo !== ''
+                && hash_equals((string) ($references['orderNo'] ?? ''), $orderNo));
     }
 
 }
