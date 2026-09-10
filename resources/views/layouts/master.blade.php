@@ -110,11 +110,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="{{ asset('template/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('template/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
     <script src="{{ asset('template/js/ruang-admin.js') }}"></script>
-
-    {!! $data['live_chat'] !!}
-
-
-
 </body>
 
 </html>

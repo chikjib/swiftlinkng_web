@@ -167,9 +167,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <!-- template js -->
     <script src="{{ asset('frontend/js/insur.js') }}"></script>
-
-    {!! $data['live_chat'] !!}
-
 </body>
 
 </html>

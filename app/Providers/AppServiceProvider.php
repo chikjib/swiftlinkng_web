@@ -41,16 +41,12 @@ class AppServiceProvider extends ServiceProvider
             return Setting::where('key', 'SOCIAL')->first();
         });
         
-        $tawkto = Cache::remember("live_chat",60*12,function() {
-            return Setting::where('key', 'LIVECHAT')->first();
-        });
-        
         $setting = explode('|', $settings->value);
         $facebook = $setting[0];
         $instagram = $setting[1];
         $twitter = $setting[2];
 
-        $data = array("facebook" => $facebook, "instagram" => $instagram, "twitter" => $twitter,"live_chat" => $tawkto->value);
+        $data = array("facebook" => $facebook, "instagram" => $instagram, "twitter" => $twitter);
 
         view()->share("data", $data);
 

@@ -181,16 +181,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <!-- template js -->
     <script src="{{ asset('frontend/js/insur.js') }}"></script>
-
-
-
-    @php
-        $tawkto = \App\Models\Setting::where('key', 'LIVECHAT')->first();
-
-    @endphp
-    {!! $tawkto->value !!}
-
-
 </body>
 
 </html>
