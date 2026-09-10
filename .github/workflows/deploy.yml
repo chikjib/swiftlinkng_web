@@ -88,6 +88,12 @@ jobs:
         if: steps.preflight.outputs.ready == 'true'
         run: npm run build
 
+      - name: Set up SSH Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H -p ${{ secrets.CPANEL_PORT }} ${{ secrets.CPANEL_HOST }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Configure SSH
         if: steps.preflight.outputs.ready == 'true'
         shell: bash
