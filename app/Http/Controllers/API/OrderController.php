@@ -7330,7 +7330,13 @@ class OrderController extends BaseController
                 
 
                 try {
+                     \Log::info("ZOE DATA PORTAL RESPONSE REQUEST");
+                \Log::info($phone);
+                \Log::info($product_code);
+                \Log::info($ref);
                     $response = $this->zoeDataPortal($product_code, $phone, $ref);
+                     \Log::info("ZOE DATA PORTAL RESPONSE REQUEST");
+                \Log::info($response);
 
                 } catch (\Throwable $e) {
                     return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
