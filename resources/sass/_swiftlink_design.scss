@@ -3068,3 +3068,220 @@ input[type="radio"] {
   .swift-active-filter { color: #fff; background: #351b1e; border-color: #7b343b; }
   .swift-transaction-filter-button { background: #fff; }
 }
+
+/* Final mobile/browser dark-mode contrast layer.
+ * Legacy Ruang/Bootstrap utilities use fixed dark grays, so override them
+ * after every component rule instead of weakening the light theme. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --swift-red: #ff6670;
+    --swift-red-dark: #ff8790;
+    --swift-ink: #f8f9fb;
+    --swift-muted: #c9ccd4;
+    --swift-page: #0e1013;
+    --swift-surface: #1b1e23;
+    --swift-surface-alt: #252930;
+    --swift-border: #4a4f59;
+  }
+
+  body,
+  .swift-app-shell,
+  .swift-content-wrapper,
+  .swift-page-content {
+    color: var(--swift-ink) !important;
+    background-color: var(--swift-page) !important;
+  }
+
+  .swift-sidebar .sidebar-heading {
+    color: #d2d5dc !important;
+  }
+
+  .swift-sidebar .nav-item .nav-link,
+  .swift-sidebar .bulk-data-link {
+    color: #f1f3f6 !important;
+  }
+
+  .swift-sidebar .nav-item .nav-link i,
+  .swift-sidebar .bulk-data-link i {
+    color: #c5c9d2 !important;
+  }
+
+  .swift-sidebar .nav-item .nav-link:hover,
+  .swift-sidebar .nav-item .router-link-exact-active,
+  .swift-sidebar .nav-item .router-link-active,
+  .swift-sidebar .bulk-data-link.router-link-active {
+    color: #ff8790 !important;
+    background: #421c21 !important;
+  }
+
+  .card,
+  .card-header,
+  .card-footer,
+  .modal-content,
+  .dropdown-menu,
+  .list-group-item,
+  .table-responsive,
+  .bank {
+    color: var(--swift-ink) !important;
+    background-color: var(--swift-surface) !important;
+    border-color: var(--swift-border) !important;
+  }
+
+  .card p:not(.text-danger):not(.text-success):not(.text-warning),
+  .modal-content p,
+  .list-group-item,
+  .dropdown-header {
+    color: var(--swift-ink);
+  }
+
+  .text-dark,
+  .text-black,
+  .text-gray-700,
+  .text-gray-800,
+  .text-gray-900 {
+    color: var(--swift-ink) !important;
+  }
+
+  .text-muted,
+  .text-secondary,
+  .text-gray-400,
+  .text-gray-500,
+  .text-gray-600,
+  small.text-muted {
+    color: var(--swift-muted) !important;
+  }
+
+  .table {
+    --bs-table-color: var(--swift-ink);
+    --bs-table-bg: transparent;
+    --bs-table-striped-color: var(--swift-ink);
+    --bs-table-striped-bg: rgba(255, 255, 255, .045);
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: rgba(255, 255, 255, .075);
+    color: var(--swift-ink) !important;
+  }
+
+  .table th,
+  .table thead th {
+    color: #f0f2f6 !important;
+    background: #292d34 !important;
+  }
+
+  .table td,
+  .table td strong,
+  .table td span:not(.badge):not(.swift-status) {
+    color: inherit;
+  }
+
+  .table tbody tr:hover {
+    color: #fff !important;
+    background: #292d34 !important;
+  }
+
+  .form-control,
+  .custom-select,
+  .input-group-text,
+  select,
+  textarea {
+    color: #fff !important;
+    background-color: #252930 !important;
+    border-color: #555b66 !important;
+  }
+
+  .form-control::placeholder,
+  textarea::placeholder {
+    color: #b9bdc7 !important;
+    opacity: 1;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff !important;
+    box-shadow: 0 0 0 1000px #252930 inset !important;
+    caret-color: #fff;
+  }
+
+  .dropdown-item,
+  .dropdown-item:visited,
+  .page-link,
+  .close {
+    color: #f4f5f8 !important;
+  }
+
+  .dropdown-item:hover,
+  .dropdown-item:focus,
+  .page-link:hover,
+  .page-link:focus {
+    color: #fff !important;
+    background-color: #30353d !important;
+  }
+
+  .page-link {
+    background-color: var(--swift-surface) !important;
+    border-color: var(--swift-border) !important;
+  }
+
+  .page-item.active .page-link {
+    color: #fff !important;
+    background-color: #c40713 !important;
+    border-color: #ff6670 !important;
+  }
+
+  .badge-success,
+  .swift-status {
+    color: #fff !important;
+    background: #087a34 !important;
+  }
+
+  .badge-danger,
+  .swift-status.is-failed {
+    color: #fff !important;
+    background: #9f0711 !important;
+  }
+
+  .badge-warning,
+  .swift-status.is-pending {
+    color: #fff !important;
+    background: #765700 !important;
+  }
+
+  .swift-transaction-copy strong,
+  .swift-quick-tile strong,
+  .swift-app-picker strong,
+  .swift-app-sheet-list strong,
+  .swift-status-filter-list button {
+    color: var(--swift-ink) !important;
+  }
+
+  .swift-transaction-copy span,
+  .swift-app-sheet-list small,
+  .swift-data-plan-header small {
+    color: var(--swift-muted) !important;
+  }
+
+  .swift-transaction-search-row .form-control,
+  .swift-search input {
+    color: #fff !important;
+    background: #252930 !important;
+  }
+
+  .swift-app-picker > i,
+  .swift-app-sheet-list > button > i,
+  .swift-search i {
+    color: #c5c9d2 !important;
+  }
+
+  .btn-outline-primary,
+  .btn-outline-danger {
+    color: #ff8790 !important;
+  }
+
+  .alert-danger,
+  .alert-danger *,
+  .alert-success,
+  .alert-success * {
+    color: #fff !important;
+  }
+}
