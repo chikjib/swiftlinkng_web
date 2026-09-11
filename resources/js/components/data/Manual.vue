@@ -6,7 +6,8 @@
       <h2>How to fund manually</h2>
       <p><strong>Minimum funding is ₦4,000.</strong></p>
       <ol>
-        <li>Pay into <strong>0762974174 · PluginLinkNg · GTBank</strong>.</li>
+        <li>Kindly pay into this account <strong>UBA 1023942441</strong> or <strong>Guarantee Trust Bank account 0796265189
+          </strong> </li>
         <li>Fill the form with the payment details.</li>
         <li>Click the submit button.</li>
         <li>Submit only once to avoid delays or duplicate funding requests.</li>
