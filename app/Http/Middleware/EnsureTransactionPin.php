@@ -12,6 +12,14 @@ class EnsureTransactionPin
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
+
+        // WhatsApp bot (level 2) and API integration (level 3) users make
+        // unattended server-to-server requests, so they cannot complete the
+        // interactive transaction-PIN challenge used by the web and app UIs.
+        if ($user && in_array((int) $user->userlevel, [2, 3], true)) {
+            return $next($request);
+        }
+
         if (!$user || empty($user->transaction_pin)) {
             return response()->json([
                 'status' => false,
