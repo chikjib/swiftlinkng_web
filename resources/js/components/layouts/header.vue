@@ -14,6 +14,7 @@
           class="btn btn-link rounded-circle swift-menu-trigger"
           :aria-label="sidebarToggled ? 'Hide navigation menu' : 'Show navigation menu'"
           :aria-expanded="sidebarToggled ? 'true' : 'false'"
+          aria-controls="accordionSidebar"
           @click="$emit('toggle-sidebar')"
         >
           <i class="fa fa-bars"></i>

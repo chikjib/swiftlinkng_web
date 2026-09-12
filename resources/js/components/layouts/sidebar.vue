@@ -11,6 +11,8 @@
       },
     ]"
     id="accordionSidebar"
+    tabindex="-1"
+    aria-label="Main navigation"
   >
     <a
       class="sidebar-brand d-flex align-items-center justify-content-center"

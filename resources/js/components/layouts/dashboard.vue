@@ -9,13 +9,13 @@
     ]"
   >
     <div id="wrapper" class="swift-app-shell">
-      <Sidebar :is-admin="isAdminRoute" :is-open="sidebarToggled"></Sidebar>
+      <Sidebar ref="sidebar" :is-admin="isAdminRoute" :is-open="sidebarToggled"></Sidebar>
       <button
         v-if="sidebarToggled"
         type="button"
         class="swift-sidebar-backdrop"
         aria-label="Close navigation menu"
-        @click="sidebarToggled = false"
+        @click="closeSidebar"
       ></button>
 
       <div id="content-wrapper" class="d-flex flex-column swift-content-wrapper">
@@ -97,6 +97,8 @@ export default {
       // warningTimer: null,
       logoutTimer: null,
       sidebarToggled: false,
+      sidebarScrollY: 0,
+      sidebarPageLocked: false,
       // warningZone: false,
     };
   },
@@ -109,6 +111,9 @@ export default {
     },
   },
   watch: {
+    sidebarToggled(isOpen) {
+      this.syncSidebarPageState(isOpen);
+    },
     "$route.fullPath"() {
       this.syncCustomerTheme();
       if (this.isAdminRoute || window.innerWidth < 768) this.sidebarToggled = false;
@@ -119,13 +124,20 @@ export default {
   },
   mounted() {
     document.documentElement.classList.add('swift-dashboard-page-scroll');
+    window.addEventListener('resize', this.handleViewportChange, { passive: true });
+    window.addEventListener('orientationchange', this.handleViewportChange, { passive: true });
+    window.addEventListener('keydown', this.handleSidebarKeydown);
     this.events.forEach(function (event) {
       window.addEventListener(event, this.resetTimer);
     }, this);
     this.setTimers();
   },
   unmounted() {
+    this.unlockPageScroll();
     document.documentElement.classList.remove('swift-dashboard-page-scroll');
+    window.removeEventListener('resize', this.handleViewportChange);
+    window.removeEventListener('orientationchange', this.handleViewportChange);
+    window.removeEventListener('keydown', this.handleSidebarKeydown);
     this.events.forEach(function (event) {
       window.removeEventListener(event, this.resetTimer);
     }, this);
@@ -139,6 +151,47 @@ export default {
   methods: {
     toggleSidebar() {
       this.sidebarToggled = !this.sidebarToggled;
+    },
+    closeSidebar() {
+      this.sidebarToggled = false;
+      this.$nextTick(() => document.getElementById('sidebarToggleTop')?.focus());
+    },
+    isMobileViewport() {
+      return window.matchMedia('(max-width: 767.98px)').matches;
+    },
+    syncSidebarPageState(isOpen = this.sidebarToggled) {
+      if (isOpen && this.isMobileViewport()) {
+        this.lockPageScroll();
+        this.$nextTick(() => this.$refs.sidebar?.$el?.focus());
+        return;
+      }
+
+      this.unlockPageScroll();
+    },
+    lockPageScroll() {
+      if (this.sidebarPageLocked) return;
+
+      this.sidebarScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.setProperty('--swift-sidebar-scroll-offset', `-${this.sidebarScrollY}px`);
+      document.documentElement.classList.add('swift-sidebar-open');
+      document.body.classList.add('swift-sidebar-open');
+      this.sidebarPageLocked = true;
+    },
+    unlockPageScroll() {
+      if (!this.sidebarPageLocked) return;
+
+      const scrollY = this.sidebarScrollY;
+      document.documentElement.classList.remove('swift-sidebar-open');
+      document.body.classList.remove('swift-sidebar-open');
+      document.body.style.removeProperty('--swift-sidebar-scroll-offset');
+      this.sidebarPageLocked = false;
+      window.scrollTo(0, scrollY);
+    },
+    handleViewportChange() {
+      this.syncSidebarPageState();
+    },
+    handleSidebarKeydown(event) {
+      if (event.key === 'Escape' && this.sidebarToggled) this.closeSidebar();
     },
     syncCustomerTheme() {
       const theme = document.getElementById('swiftlink-customer-theme')
@@ -204,6 +257,20 @@ html.swift-dashboard-page-scroll {
   overflow-y: scroll;
 }
 
+html.swift-sidebar-open,
+body.swift-sidebar-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+body.swift-sidebar-open {
+  position: fixed;
+  top: var(--swift-sidebar-scroll-offset, 0);
+  right: 0;
+  left: 0;
+  width: 100%;
+}
+
 .swift-dashboard-shell,
 .swift-dashboard-shell .swift-app-shell {
   width: 100%;
@@ -259,33 +326,50 @@ html.swift-dashboard-page-scroll {
   }
 
   .swift-dashboard-shell .swift-sidebar {
-    position: fixed;
+    position: fixed !important;
     inset: 0 auto 0 0;
     z-index: 1080;
     width: min(84vw, 310px) !important;
     min-width: min(84vw, 310px) !important;
     min-height: 100vh !important;
+    min-height: -webkit-fill-available !important;
     min-height: 100dvh !important;
     height: 100vh !important;
+    height: -webkit-fill-available !important;
     height: 100dvh !important;
     max-height: 100vh;
+    max-height: -webkit-fill-available;
     max-height: 100dvh;
     overflow-x: hidden !important;
-    overflow-y: scroll !important;
-    overscroll-behavior: contain;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    padding-left: env(safe-area-inset-left, 0px);
     scrollbar-color: #b7bac2 transparent;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
-    transform: translateX(-105%) !important;
+    transform: translate3d(-105%, 0, 0) !important;
+    visibility: hidden;
+    pointer-events: none;
+    will-change: transform;
+    transition: transform .24s ease, visibility 0s linear .24s;
   }
 
   .swift-dashboard-shell .swift-sidebar::-webkit-scrollbar { width: 7px; }
   .swift-dashboard-shell .swift-sidebar::-webkit-scrollbar-track { background: transparent; }
   .swift-dashboard-shell .swift-sidebar::-webkit-scrollbar-thumb { background: #b7bac2; border-radius: 999px; }
 
+  .swift-dashboard-shell.sidebar-toggled .swift-sidebar,
   .swift-dashboard-shell .swift-sidebar.toggled {
     margin-left: 0 !important;
-    transform: translateX(0) !important;
+    transform: translate3d(0, 0, 0) !important;
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform .24s ease, visibility 0s;
     overflow-x: hidden !important;
     overflow-y: scroll !important;
   }
@@ -294,6 +378,23 @@ html.swift-dashboard-page-scroll {
     width: 100% !important;
     margin-left: 0 !important;
     transform: none !important;
+  }
+
+  .swift-dashboard-shell .swift-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1075;
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    background: rgba(10, 11, 14, .58);
+    border: 0;
+    border-radius: 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
   }
 }
 
@@ -307,23 +408,39 @@ html.swift-dashboard-page-scroll {
   width: min(86vw, var(--swift-sidebar-width, 260px)) !important;
   min-width: min(86vw, var(--swift-sidebar-width, 260px)) !important;
   height: 100vh !important;
+  height: -webkit-fill-available !important;
   height: 100dvh !important;
   min-height: 100vh !important;
+  min-height: -webkit-fill-available !important;
   min-height: 100dvh !important;
+  max-height: -webkit-fill-available !important;
   max-height: 100dvh !important;
   flex-basis: auto !important;
   align-content: flex-start;
   overflow-x: hidden !important;
   overflow-y: auto !important;
-  overscroll-behavior: contain;
-  transform: translateX(-105%) !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  padding-left: env(safe-area-inset-left, 0px);
+  transform: translate3d(-105%, 0, 0) !important;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform .24s ease, visibility 0s linear .24s;
 }
 
 .swift-dashboard-shell.swift-admin-shell.sidebar-toggled .swift-sidebar--admin {
   margin-left: 0 !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
-  transform: translateX(0) !important;
+  transform: translate3d(0, 0, 0) !important;
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform .24s ease, visibility 0s;
 }
 
 .swift-admin-shell .swift-sidebar-backdrop {
