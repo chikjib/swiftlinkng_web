@@ -46,7 +46,10 @@
 
                     <tr>
                       <td>Email Status</td>
-                      <td>
+                      <td
+                        class="profile-email-status"
+                        :class="users.email_verified ? 'is-verified' : 'is-unverified'"
+                      >
                         <span v-if="users.email_verified" class="badge badge-success">
                           Verified
                         </span>
@@ -908,6 +911,69 @@ export default {
 .verification-copy { flex: 1; }
 .verification-copy h4, .verification-copy p { margin: 0; }
 .verification-copy p { margin-top: 5px; }
+
+@media (prefers-color-scheme: dark) {
+  .email-verification-card.is-verified {
+    color: #075f2a !important;
+    background: #dff5e7;
+    border-color: #72bc8d;
+  }
+
+  .email-verification-card.is-verified .verification-icon,
+  .email-verification-card.is-verified .verification-copy,
+  .email-verification-card.is-verified h4,
+  .email-verification-card.is-verified p,
+  .email-verification-card.is-verified i,
+  .email-verification-card.is-verified strong,
+  .email-verification-card.is-verified a {
+    color: #075f2a !important;
+  }
+
+  .email-verification-card.is-unverified {
+    color: #7f1018 !important;
+    background: #ffe5e8;
+    border-color: #d77b83;
+  }
+
+  .email-verification-card.is-unverified .verification-icon,
+  .email-verification-card.is-unverified .verification-copy,
+  .email-verification-card.is-unverified h4,
+  .email-verification-card.is-unverified p,
+  .email-verification-card.is-unverified i,
+  .email-verification-card.is-unverified strong,
+  .email-verification-card.is-unverified a,
+  .email-verification-card.is-unverified button {
+    color: #7f1018 !important;
+  }
+
+  .email-verification-card.is-unverified button {
+    background: #fff5f6 !important;
+    border-color: #9f0711 !important;
+  }
+
+  .profile-email-status.is-verified,
+  .profile-email-status.is-verified .badge {
+    color: #075f2a !important;
+  }
+
+  .profile-email-status.is-verified .badge {
+    background: #dff5e7 !important;
+    border: 1px solid #72bc8d;
+  }
+
+  .profile-email-status.is-unverified,
+  .profile-email-status.is-unverified small,
+  .profile-email-status.is-unverified .badge,
+  .profile-email-status.is-unverified button {
+    color: #7f1018 !important;
+  }
+
+  .profile-email-status.is-unverified .badge,
+  .profile-email-status.is-unverified button {
+    background: #fff5f6 !important;
+    border-color: #9f0711 !important;
+  }
+}
 
 @media (max-width: 700px) {
   .email-verification-card {
