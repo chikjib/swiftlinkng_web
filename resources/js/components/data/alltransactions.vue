@@ -3,16 +3,14 @@
     <vcl-table :row="5" :column="8"></vcl-table>
   </div>
 
-  <div v-else class="row">
-    <div class="col-lg-12">
+  <div v-else class="col-xl-12 col-lg-12">
       <h4 class="card-title">All Transactions</h4>
       <div class="row">
-        <div class="col-md-2"></div>
         <div class="col-md-9 mb-2">
           <form @submit.prevent="getResults" class="form-inline">
             <div class="col-md-2">
               <select class="form-control" v-model="field">
-                <option>Search By</option>
+                <option value="">Search By</option>
                 <option value="phone">phone</option>
 
                 <option value="description">Description</option>
@@ -36,7 +34,7 @@
             </div>
             <div class="col-md-3">
               <select class="form-control" v-model="status">
-                <option>Select Status</option>
+                <option value="">Select Status</option>
                 <option value="1">Confirmed</option>
                 <option value="0">Pending</option>
                 <option value="2">Reversed</option>
@@ -68,7 +66,6 @@
               <th>Phone</th>
 
               <th>IUC/Meter</th>
-              <th></th>
               <th>Bal</th>
               <th>Prev Bal</th>
               <th>Response</th>
@@ -85,18 +82,19 @@
                   {{ transaction.ref }}
                 </div>
               </td>
-              <td>
+              <td v-if="transaction.user">
                 {{
-                  transaction.user.firstname +
+                  (transaction.user.firstname || "") +
                   " " +
-                  transaction.user.email +
+                  (transaction.user.email || "") +
                   " " +
-                  transaction.user.phone
+                  (transaction.user.phone || "")
                 }}
               </td>
-              <td>{{ transaction.category.title }}</td>
+              <td v-else>User not available</td>
+              <td>{{ transaction.category ? transaction.category.title : "-" }}</td>
               <td>
-                <div v-if="transaction.description.length < 40">
+                <div v-if="!transaction.description || transaction.description.length < 40">
                   {{ transaction.description }}
                 </div>
                 <div v-else>
@@ -141,7 +139,6 @@
               </td>
 
               <td>{{ transaction.iuc }}{{ transaction.meter }}</td>
-              <td></td>
               <td>&#8358; {{ formatNumber(transaction.bal) }}</td>
               <td>&#8358; {{ formatNumber(transaction.prev_bal) }}</td>
 
@@ -202,7 +199,7 @@
                 <a
                   class="btn btn-info"
                   href="#"
-                  v-if="transaction.category.title === 'Airtime' || transaction.category.title === 'Data'"
+                  v-if="transaction.category && (transaction.category.title === 'Airtime' || transaction.category.title === 'Data')"
                   @click.stop="confirmTransaction(transaction.id, 'reverse')"
                   >Reverse</a
                 >
@@ -228,7 +225,6 @@
         @pagination-change-page="getResults"
       >
       </pagination>
-    </div>
   </div>
 </template>
 
@@ -244,10 +240,10 @@ export default {
 
   data() {
     return {
-      transactions: {},
-      keyword: null,
-      field: "Search By",
-      status: "Select Status",
+      transactions: { data: [] },
+      keyword: "",
+      field: "",
+      status: "",
       searching: false,
       isloading: false,
       showMoreDes: false,

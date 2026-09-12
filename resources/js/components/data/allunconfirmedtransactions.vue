@@ -3,16 +3,14 @@
     <vcl-table :row="5" :column="8"></vcl-table>
   </div>
 
-  <div v-else class="row">
-    <div class="col-lg-12">
-      <h4 class="card-title">All Transactions</h4>
+  <div v-else class="col-xl-12 col-lg-12">
+      <h4 class="card-title">Unconfirmed Transactions</h4>
       <div class="row">
-        <div class="col-md-6"></div>
-        <div class="col-md-6 mb-2">
+        <div class="col-md-9 mb-2">
           <form @submit.prevent="getResults" class="form-inline">
             <div class="col-md-3">
               <select class="form-control" v-model="field">
-                <option>Search By</option>
+                <option value="">Search By</option>
                 <option value="phone">phone</option>
 
                 <option value="description">Description</option>
@@ -42,12 +40,11 @@
         </div>
       </div>
       <br />
-      <div class="table-responsive swift-admin-scroll-table-wrap">
-        <div
-          v-if="errorflag != ''"
-          class="alert alert-danger alert-dismissible"
-          role="alert"
-        >
+      <div
+        v-if="errorflag != ''"
+        class="alert alert-danger alert-dismissible"
+        role="alert"
+      >
           <button
             type="button"
             class="close"
@@ -57,11 +54,14 @@
             <span aria-hidden="true">&times;</span>
           </button>
           {{ errorflag }}
-        </div>
+      </div>
+      <div class="swift-transaction-actions mb-2">
         <button @click="updateStatus('confirm')" :disabled="selectedTransactions.length === 0 || processing" class="btn btn-success">{{ processing ? "Processing..." : "Confirm Selected" }}</button>
         <button @click="updateStatus('reverse')" :disabled="selectedTransactions.length === 0 || processing" class="btn btn-danger">{{ processing ? "Processing..." : "Reverse Selected"}}</button>
-        <table class="table table-bordered swift-admin-scroll-table" id="datatable">
-          <thead>
+      </div>
+      <div class="table-responsive swift-admin-scroll-table-wrap">
+        <table class="table table-bordered swift-admin-scroll-table swift-compact-table swift-admin-transactions-table" id="datatable">
+          <thead class="thead-light">
             <tr>
               <th><input type="checkbox" @change="toggleSelectAll" v-model="selectAll"></th>
               <th>ID</th>
@@ -86,25 +86,25 @@
                 <td><input type="checkbox" v-model="selectedTransactions" :value="transaction.id"/></td>
 
               <td>
-                <div style="width: 60px" class="box">
+                <div class="box swift-reference-cell">
                   {{ transaction.ref }}
                 </div>
               </td>
               <td v-if="transaction.user != null">
                 {{
-                  transaction.user.firstname +
+                  (transaction.user.firstname || "") +
                   " " +
-                  transaction.user.email +
+                  (transaction.user.email || "") +
                   " " +
-                  transaction.user.phone
+                  (transaction.user.phone || "")
                 }}
               </td>
               <td v-else>
                 User not available in the users table
               </td>
-              <td>{{ transaction.category.title }}</td>
+              <td>{{ transaction.category ? transaction.category.title : "-" }}</td>
               <td>
-                <div v-if="transaction.description.length < 40">
+                <div v-if="!transaction.description || transaction.description.length < 40">
                   {{ transaction.description }}
                 </div>
                 <div v-else>
@@ -227,7 +227,7 @@
                     >Reverse</a
                   >
                   <a
-                  v-if="transaction.status == 0 && transaction.category.id == 4"
+                  v-if="transaction.status == 0 && transaction.category && transaction.category.id == 4"
                   class="btn btn-danger"
                   href="#"
                   @click.stop="
@@ -236,7 +236,7 @@
                   >Requery</a
                 >
               <a
-                  v-if="transaction.status == 0 && transaction.category.id == 3"
+                  v-if="transaction.status == 0 && transaction.category && transaction.category.id == 3"
                   class="btn btn-danger"
                   href="#"
                   @click.stop="
@@ -245,7 +245,7 @@
                   >Requery</a
                 >
                 <a
-                  v-if="transaction.status == 0 && transaction.category.id == 1"
+                  v-if="transaction.status == 0 && transaction.category && transaction.category.id == 1"
                   class="btn btn-info"
                   href="#"
                   @click.stop="
@@ -274,7 +274,6 @@
         :data="transactions"
         @pagination-change-page="getResults"
       ></pagination>
-    </div>
   </div>
 </template>
 
@@ -294,9 +293,9 @@ export default {
 
   data() {
     return {
-      transactions: {},
-      keyword: null,
-      field: "Search By",
+      transactions: { data: [] },
+      keyword: "",
+      field: "",
       searching: false,
       isloading: false,
       errorflag: "",
@@ -588,10 +587,16 @@ export default {
 <style scoped>
 .pagination {
   margin-bottom: 0;
-  margin-top: 5;
+  margin-top: 5px;
 }
 .box {
-  inline-size: 5px;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.swift-transaction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 </style>

@@ -9,7 +9,12 @@
     ]"
   >
     <div id="wrapper" class="swift-app-shell">
-      <Sidebar ref="sidebar" :is-admin="isAdminRoute" :is-open="sidebarToggled"></Sidebar>
+      <Sidebar
+        ref="sidebar"
+        :is-admin="isAdminRoute"
+        :is-open="sidebarToggled"
+        @close-sidebar="closeSidebar"
+      ></Sidebar>
       <button
         v-if="sidebarToggled"
         type="button"
@@ -282,6 +287,10 @@ body.swift-sidebar-open {
   display: flex;
 }
 
+.swift-dashboard-shell .swift-sidebar-backdrop {
+  display: none;
+}
+
 .swift-dashboard-shell .swift-sidebar {
   position: relative;
   top: auto;
@@ -396,63 +405,6 @@ body.swift-sidebar-open {
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
   }
-}
-
-/* Admin navigation is an overlay at every viewport size. It stays out of the
-   page flow so opening it never pushes or clips the dashboard. */
-.swift-dashboard-shell.swift-admin-shell .swift-sidebar--admin {
-  position: fixed;
-  inset: 0 auto 0 0;
-  z-index: 1080;
-  display: flex;
-  width: min(86vw, var(--swift-sidebar-width, 260px)) !important;
-  min-width: min(86vw, var(--swift-sidebar-width, 260px)) !important;
-  height: 100vh !important;
-  height: -webkit-fill-available !important;
-  height: 100dvh !important;
-  min-height: 100vh !important;
-  min-height: -webkit-fill-available !important;
-  min-height: 100dvh !important;
-  max-height: -webkit-fill-available !important;
-  max-height: 100dvh !important;
-  flex-basis: auto !important;
-  align-content: flex-start;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  padding-left: env(safe-area-inset-left, 0px);
-  transform: translate3d(-105%, 0, 0) !important;
-  visibility: hidden;
-  pointer-events: none;
-  will-change: transform;
-  transition: transform .24s ease, visibility 0s linear .24s;
-}
-
-.swift-dashboard-shell.swift-admin-shell.sidebar-toggled .swift-sidebar--admin {
-  margin-left: 0 !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  transform: translate3d(0, 0, 0) !important;
-  visibility: visible;
-  pointer-events: auto;
-  transition: transform .24s ease, visibility 0s;
-}
-
-.swift-admin-shell .swift-sidebar-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1075;
-  display: block;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  background: rgba(10, 11, 14, .58);
-  border: 0;
 }
 
 .sidebar .nav-item .router-link-exact-active {

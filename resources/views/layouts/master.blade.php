@@ -46,6 +46,33 @@
         .swift-admin-shell .swift-admin-scroll-table .box,
         .swift-admin-shell .swift-admin-scroll-table .swift-reference-cell { width: auto !important; max-width: none !important; white-space: nowrap !important; overflow-wrap: normal !important; word-break: normal !important; }
         .swift-admin-shell .swift-admin-scroll-table .btn-group { flex-wrap: nowrap; }
+        .swift-admin-shell .swift-admin-transactions-table {
+            width: 100% !important;
+            min-width: 920px !important;
+            table-layout: fixed !important;
+            white-space: normal !important;
+        }
+        .swift-admin-shell .swift-admin-transactions-table th,
+        .swift-admin-shell .swift-admin-transactions-table td,
+        .swift-admin-shell .swift-admin-transactions-table .box,
+        .swift-admin-shell .swift-admin-transactions-table .swift-reference-cell {
+            width: auto !important;
+            max-width: 120px !important;
+            padding: 5px 4px !important;
+            line-height: 1.3;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+        }
+        .swift-admin-shell .swift-admin-transactions-table th:last-child,
+        .swift-admin-shell .swift-admin-transactions-table td:last-child {
+            width: 120px !important;
+            max-width: 120px !important;
+        }
+        .swift-admin-shell .swift-admin-transactions-table .btn-group {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
     </style>
 
     <!-- Meta Pixel Code -->

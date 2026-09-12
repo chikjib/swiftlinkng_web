@@ -14,6 +14,16 @@
     tabindex="-1"
     aria-label="Main navigation"
   >
+    <li v-if="isOpen" class="swift-sidebar-close-item">
+      <button
+        type="button"
+        class="swift-sidebar-close"
+        aria-label="Close navigation menu"
+        @click="$emit('close-sidebar')"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </li>
     <a
       class="sidebar-brand d-flex align-items-center justify-content-center"
       href="/dashboard"
@@ -362,6 +372,7 @@
 
 <script>
 export default {
+  emits: ['close-sidebar'],
   props: {
     isAdmin: {
       type: Boolean,
@@ -420,6 +431,41 @@ export default {
 </script>
 
 <style scoped>
+.swift-sidebar-close-item {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .swift-sidebar-close-item {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    min-height: 48px;
+    padding: 6px 10px 0;
+    pointer-events: none;
+  }
+
+  .swift-sidebar-close {
+    display: inline-grid;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    place-items: center;
+    color: #fff;
+    font-size: 20px;
+    background: #9f071d;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .3);
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
 .bulk-data-toggle {
   align-items: center;
   background: transparent;
