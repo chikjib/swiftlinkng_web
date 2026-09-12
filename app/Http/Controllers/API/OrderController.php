@@ -12694,12 +12694,20 @@ class OrderController extends BaseController
     }
 
     public function exportTransactions(Request $request)
-    { 
-        $start_date = $request->start_date;
-        $end_date = $request->end_date;
-        \Log::info("START DATE"); 
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+        $user = $request->user('api');
+        $start_date = $validated['start_date'] ?? null;
+        $end_date = $validated['end_date'] ?? null;
+        \Log::info("START DATE");
         \Log::info($start_date);
-        return Excel::download(new ExportOrder($start_date,$end_date), 'transactions.xlsx');
+        return Excel::download(
+            new ExportOrder($user->id, $start_date, $end_date),
+            'transactions.xlsx'
+        );
     }
     
     public function destroy($id)

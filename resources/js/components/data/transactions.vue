@@ -61,8 +61,15 @@
           </form>
         </div>
         <div class="col-md-4">
-          <a href="/export-transactions" class="btn btn-danger">Download Transactions</a>
-      </div>
+          <button
+            type="button"
+            class="btn btn-danger"
+            :disabled="exporting"
+            @click="downloadTransactions"
+          >
+            {{ exporting ? "Preparing Download..." : "Download Transactions" }}
+          </button>
+        </div>
       </div>
       <div class="table-responsive swift-admin-scroll-table-wrap">
         <table class="table table-bordered swift-admin-scroll-table swift-compact-table swift-user-transactions-table">
@@ -262,6 +269,7 @@
         form: {},
         showMoreDes: false,
         showMorePhone: false,
+        exporting: false,
       };
     },
 
@@ -275,6 +283,32 @@
     //   },
     // },
     methods: {
+      async downloadTransactions() {
+        if (this.exporting) return;
+
+        this.exporting = true;
+        try {
+          const response = await axios.get('/api/export-transactions', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            },
+            responseType: 'blob',
+          });
+          const url = window.URL.createObjectURL(response.data);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'transactions.xlsx';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          this.$toasted.show('Unable to download transactions. Please sign in again and retry.');
+        } finally {
+          this.exporting = false;
+        }
+      },
       list(page) {
         if (typeof page === "undefined") {
           page = 1;

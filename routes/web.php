@@ -93,9 +93,6 @@ Route::webhooks('opay-wallet-webhook', 'opay-wallet-webhook')
     ->middleware('throttle:120,1');
 Route::webhooks('budpay-webhook', 'budpay-webhook');
 
-Route::get('/export-transactions',[App\Http\Controllers\API\OrderController::class,
-            'exportTransactions'])->name('exportTransactions');
-
 //MTN SME (WEBSITE)
 Route::get('/mtn-sme-cloud-login',[App\Http\Controllers\MtnSmeController::class,
 'automationLoginView'])->name('automationLoginView');

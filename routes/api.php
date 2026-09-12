@@ -99,6 +99,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('referrals/downline', [ReferralController::class, 'referrals']);
     // Route::resource('products', ProductController::class);
     Route::resource('orders', OrderController::class);
+    Route::get('export-transactions', [OrderController::class, 'exportTransactions'])
+        ->name('api.exportTransactions');
     Route::post('orders/update-status', [OrderController::class,'updateStatus'])->name('update_status')->middleware('admin.only');
     Route::post('order/reports', [App\Http\Controllers\API\OrderController::class, 'getReport'])->middleware('admin.only');
      Route::post('accounting/reports', [App\Http\Controllers\API\OrderController::class, 'getAccountingReport'])->middleware('admin.only');

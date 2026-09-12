@@ -3,13 +3,6 @@
 namespace App\Exports;
 
 use App\Models\Order;
-use App\Models\User;
-use App\Models\Subcategory;
-use App\Models\Category;
-use Illuminate\Support\Facades\Auth;
-
-
-use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -18,6 +11,17 @@ ini_set('memory_limit','1024M');
 
 class ExportOrder implements FromQuery,WithMapping,WithHeadings
 {
+    private int $userId;
+    private ?string $startDate;
+    private ?string $endDate;
+
+    public function __construct(int $userId, ?string $startDate = null, ?string $endDate = null)
+    {
+        $this->userId = $userId;
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
+    }
+
     /**
     * @return \Illuminate\Support\Collection
     */
@@ -28,7 +32,19 @@ class ExportOrder implements FromQuery,WithMapping,WithHeadings
     
     public function query()
     {
-        return Order::with(['subcategory:id,category_id,title'])->where('user_id',Auth::user()->id)->orderBy('created_at', 'desc');
+        return Order::with([
+                'category:id,title',
+                'subcategory:id,category_id,title',
+                'subcategory.category:id,title',
+            ])
+            ->where('user_id', $this->userId)
+            ->when($this->startDate, function ($query) {
+                $query->where('created_at', '>=', $this->startDate);
+            })
+            ->when($this->endDate, function ($query) {
+                $query->where('created_at', '<=', $this->endDate);
+            })
+            ->orderBy('created_at', 'desc');
         
     }
     
@@ -59,13 +75,6 @@ class ExportOrder implements FromQuery,WithMapping,WithHeadings
         
     }
     
-    private function getType($id)
-    {
-        $category = Category::find($id);
-        $title = $category->title;
-        return $title;
-    }
-    
     public function map($order): array
     {
         \Log::info("FROM EXPORT ORDER MAP");
@@ -73,7 +82,9 @@ class ExportOrder implements FromQuery,WithMapping,WithHeadings
         
         return [
             $order->ref,
-            $this->getType($order->subcategory->category_id),
+            optional($order->category)->title
+                ?? optional(optional($order->subcategory)->category)->title
+                ?? '-',
             $order->description,
             $order->subtotal,
             $order->phone,
