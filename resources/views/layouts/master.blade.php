@@ -48,7 +48,7 @@
         .swift-admin-shell .swift-admin-scroll-table .btn-group { flex-wrap: nowrap; }
         .swift-admin-shell .swift-admin-transactions-table {
             width: 100% !important;
-            min-width: 920px !important;
+            min-width: 1050px !important;
             table-layout: fixed !important;
             white-space: normal !important;
         }
@@ -73,6 +73,41 @@
             flex-wrap: wrap;
             gap: 4px;
         }
+        .swift-admin-shell .swift-admin-transactions-table .swift-col-user { width: 155px !important; max-width: 155px !important; }
+        .swift-admin-shell .swift-admin-transactions-table .swift-col-description { width: 165px !important; max-width: 165px !important; }
+        .swift-admin-shell .swift-admin-transactions-table .swift-col-phone { width: 110px !important; max-width: 110px !important; }
+        .swift-admin-shell .swift-admin-transactions-table .swift-col-response { width: 165px !important; max-width: 165px !important; }
+        .swift-admin-shell .swift-admin-transactions-table .swift-col-iuc-meter { width: 105px !important; max-width: 105px !important; }
+        .swift-admin-shell .swift-admin-transactions-table .swift-col-created-at { width: 125px !important; max-width: 125px !important; }
+        .swift-admin-shell .swift-all-transactions-table { width: 1760px !important; min-width: 1760px !important; table-layout: fixed !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-reference { width: 125px !important; max-width: 125px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-user { width: 190px !important; max-width: 190px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-type { width: 95px !important; max-width: 95px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-description { width: 210px !important; max-width: 210px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-amount { width: 100px !important; max-width: 100px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-phone { width: 135px !important; max-width: 135px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-iuc-meter { width: 120px !important; max-width: 120px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-balance { width: 95px !important; max-width: 95px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-prev-balance { width: 105px !important; max-width: 105px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-response { width: 220px !important; max-width: 220px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-status { width: 90px !important; max-width: 90px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-created-at { width: 155px !important; max-width: 155px !important; }
+        .swift-admin-shell .swift-all-transactions-table .swift-col-action { width: 120px !important; max-width: 120px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table { width: 1845px !important; min-width: 1845px !important; table-layout: fixed !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-select { width: 45px !important; max-width: 45px !important; text-align: center; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-reference { width: 125px !important; max-width: 125px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-user { width: 190px !important; max-width: 190px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-type { width: 95px !important; max-width: 95px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-description { width: 210px !important; max-width: 210px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-amount { width: 100px !important; max-width: 100px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-phone { width: 135px !important; max-width: 135px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-iuc-meter { width: 120px !important; max-width: 120px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-balance { width: 95px !important; max-width: 95px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-prev-balance { width: 105px !important; max-width: 105px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-response { width: 220px !important; max-width: 220px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-status { width: 90px !important; max-width: 90px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-created-at { width: 155px !important; max-width: 155px !important; }
+        .swift-admin-shell .swift-unconfirmed-transactions-table .swift-col-action { width: 160px !important; max-width: 160px !important; }
     </style>
 
     <!-- Meta Pixel Code -->

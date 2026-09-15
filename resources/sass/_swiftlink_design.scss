@@ -1618,7 +1618,7 @@ input[type="radio"] {
 }
 
 .swift-admin-transactions-table {
-  min-width: 920px;
+  min-width: 1050px;
   font-size: .8rem;
 }
 
@@ -1635,6 +1635,54 @@ input[type="radio"] {
   padding: 4px 6px;
   font-size: .75rem;
 }
+
+.swift-admin-transactions-table .swift-col-user { width: 155px !important; max-width: 155px !important; }
+.swift-admin-transactions-table .swift-col-description { width: 165px !important; max-width: 165px !important; }
+.swift-admin-transactions-table .swift-col-phone { width: 110px !important; max-width: 110px !important; }
+.swift-admin-transactions-table .swift-col-response { width: 165px !important; max-width: 165px !important; }
+.swift-admin-transactions-table .swift-col-iuc-meter { width: 105px !important; max-width: 105px !important; }
+.swift-admin-transactions-table .swift-col-created-at { width: 125px !important; max-width: 125px !important; }
+
+.swift-all-transactions-table {
+  width: 1760px !important;
+  min-width: 1760px !important;
+  table-layout: fixed !important;
+}
+
+.swift-all-transactions-table .swift-col-reference { width: 125px !important; max-width: 125px !important; }
+.swift-all-transactions-table .swift-col-user { width: 190px !important; max-width: 190px !important; }
+.swift-all-transactions-table .swift-col-type { width: 95px !important; max-width: 95px !important; }
+.swift-all-transactions-table .swift-col-description { width: 210px !important; max-width: 210px !important; }
+.swift-all-transactions-table .swift-col-amount { width: 100px !important; max-width: 100px !important; }
+.swift-all-transactions-table .swift-col-phone { width: 135px !important; max-width: 135px !important; }
+.swift-all-transactions-table .swift-col-iuc-meter { width: 120px !important; max-width: 120px !important; }
+.swift-all-transactions-table .swift-col-balance { width: 95px !important; max-width: 95px !important; }
+.swift-all-transactions-table .swift-col-prev-balance { width: 105px !important; max-width: 105px !important; }
+.swift-all-transactions-table .swift-col-response { width: 220px !important; max-width: 220px !important; }
+.swift-all-transactions-table .swift-col-status { width: 90px !important; max-width: 90px !important; }
+.swift-all-transactions-table .swift-col-created-at { width: 155px !important; max-width: 155px !important; }
+.swift-all-transactions-table .swift-col-action { width: 120px !important; max-width: 120px !important; }
+
+.swift-unconfirmed-transactions-table {
+  width: 1845px !important;
+  min-width: 1845px !important;
+  table-layout: fixed !important;
+}
+
+.swift-unconfirmed-transactions-table .swift-col-select { width: 45px !important; max-width: 45px !important; text-align: center; }
+.swift-unconfirmed-transactions-table .swift-col-reference { width: 125px !important; max-width: 125px !important; }
+.swift-unconfirmed-transactions-table .swift-col-user { width: 190px !important; max-width: 190px !important; }
+.swift-unconfirmed-transactions-table .swift-col-type { width: 95px !important; max-width: 95px !important; }
+.swift-unconfirmed-transactions-table .swift-col-description { width: 210px !important; max-width: 210px !important; }
+.swift-unconfirmed-transactions-table .swift-col-amount { width: 100px !important; max-width: 100px !important; }
+.swift-unconfirmed-transactions-table .swift-col-phone { width: 135px !important; max-width: 135px !important; }
+.swift-unconfirmed-transactions-table .swift-col-iuc-meter { width: 120px !important; max-width: 120px !important; }
+.swift-unconfirmed-transactions-table .swift-col-balance { width: 95px !important; max-width: 95px !important; }
+.swift-unconfirmed-transactions-table .swift-col-prev-balance { width: 105px !important; max-width: 105px !important; }
+.swift-unconfirmed-transactions-table .swift-col-response { width: 220px !important; max-width: 220px !important; }
+.swift-unconfirmed-transactions-table .swift-col-status { width: 90px !important; max-width: 90px !important; }
+.swift-unconfirmed-transactions-table .swift-col-created-at { width: 155px !important; max-width: 155px !important; }
+.swift-unconfirmed-transactions-table .swift-col-action { width: 160px !important; max-width: 160px !important; }
 
 .swift-admin-users-table th:last-child,
 .swift-admin-users-table td:last-child,

@@ -60,37 +60,37 @@
         <button @click="updateStatus('reverse')" :disabled="selectedTransactions.length === 0 || processing" class="btn btn-danger">{{ processing ? "Processing..." : "Reverse Selected"}}</button>
       </div>
       <div class="table-responsive swift-admin-scroll-table-wrap">
-        <table class="table table-bordered swift-admin-scroll-table swift-compact-table swift-admin-transactions-table" id="datatable">
+        <table class="table table-bordered swift-admin-scroll-table swift-compact-table swift-admin-transactions-table swift-unconfirmed-transactions-table" id="datatable">
           <thead class="thead-light">
             <tr>
-              <th><input type="checkbox" @change="toggleSelectAll" v-model="selectAll"></th>
-              <th>ID</th>
-              <th>User</th>
-              <th>Type</th>
-              <th>Description</th>
+              <th class="swift-col-select"><input type="checkbox" @change="toggleSelectAll" v-model="selectAll"></th>
+              <th class="swift-col-reference">ID</th>
+              <th class="swift-col-user">User</th>
+              <th class="swift-col-type">Type</th>
+              <th class="swift-col-description">Description</th>
 
-              <th>Amount</th>
-              <th>Phone</th>
+              <th class="swift-col-amount">Amount</th>
+              <th class="swift-col-phone">Phone Number</th>
 
-              <th>IUC/Meter</th>
-              <th>Bal</th>
-              <th>Prev Bal</th>
-              <th>Response</th>
-              <th>Status</th>
-              <th>Created At</th>
-              <th>Action</th>
+              <th class="swift-col-iuc-meter">IUC/Meter</th>
+              <th class="swift-col-balance">Bal</th>
+              <th class="swift-col-prev-balance">Prev Bal</th>
+              <th class="swift-col-response">Response</th>
+              <th class="swift-col-status">Status</th>
+              <th class="swift-col-created-at">Created At</th>
+              <th class="swift-col-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="transaction in transactions.data" :key="transaction.id">
-                <td><input type="checkbox" v-model="selectedTransactions" :value="transaction.id"/></td>
+                <td class="swift-col-select"><input type="checkbox" v-model="selectedTransactions" :value="transaction.id"/></td>
 
-              <td>
+              <td class="swift-col-reference">
                 <div class="box swift-reference-cell">
                   {{ transaction.ref }}
                 </div>
               </td>
-              <td v-if="transaction.user != null">
+              <td v-if="transaction.user != null" class="swift-col-user">
                 {{
                   (transaction.user.firstname || "") +
                   " " +
@@ -99,11 +99,11 @@
                   (transaction.user.phone || "")
                 }}
               </td>
-              <td v-else>
+              <td v-else class="swift-col-user">
                 User not available in the users table
               </td>
-              <td>{{ transaction.category ? transaction.category.title : "-" }}</td>
-              <td>
+              <td class="swift-col-type">{{ transaction.category ? transaction.category.title : "-" }}</td>
+              <td class="swift-col-description">
                 <div v-if="!transaction.description || transaction.description.length < 40">
                   {{ transaction.description }}
                 </div>
@@ -123,8 +123,8 @@
                   </button>
                 </div>
               </td>
-              <td>&#8358; {{ formatNumber(transaction.subtotal) }}</td>
-              <td>
+              <td class="swift-col-amount">&#8358; {{ formatNumber(transaction.subtotal) }}</td>
+              <td class="swift-col-phone">
                 <div v-if="transaction.phone == null">
                   {{ transaction.phone }}
                 </div>
@@ -148,10 +148,10 @@
                 </div>
               </td>
 
-              <td>{{ transaction.iuc }}{{ transaction.meter }}</td>
-              <td>&#8358; {{ formatNumber(transaction.bal) }}</td>
-              <td>&#8358; {{ formatNumber(transaction.prev_bal) }}</td>
-              <td>
+              <td class="swift-col-iuc-meter">{{ transaction.iuc }}{{ transaction.meter }}</td>
+              <td class="swift-col-balance">&#8358; {{ formatNumber(transaction.bal) }}</td>
+              <td class="swift-col-prev-balance">&#8358; {{ formatNumber(transaction.prev_bal) }}</td>
+              <td class="swift-col-response">
                 <div v-if="transaction.response == null">
                   {{ transaction.response }}
                 </div>
@@ -175,7 +175,7 @@
                 </div>
               </td>
 
-              <td>
+              <td class="swift-col-status">
                 <label
                   class="badge badge-success"
                   v-if="transaction.status == '1'"
@@ -201,9 +201,9 @@
 
                 <label class="badge badge-warning" v-else>Pending</label>
               </td>
-              <td>{{ transaction.created_at }}</td>
+              <td class="swift-col-created-at">{{ transaction.created_at }}</td>
 
-              <td>
+              <td class="swift-col-action">
                 <div class="btn-group" role="group">
                   <a
                     class="btn btn-danger"
