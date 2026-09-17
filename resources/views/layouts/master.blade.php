@@ -5,6 +5,9 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="title" content="Swiftlinkng - Get Connected with ease">
     <meta name="description" content="Buy data, Buy airtime and Pay Bills @ a discount with Swiftlinkng. Connect at ease with loved ones and business.">
     <meta name="keywords" content="Buy data, Buy airtime, Pay Bills">
@@ -19,6 +22,36 @@
     <link href="{{ asset('template/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
     <link href="{{ asset('template/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css">
     <link href="{{ asset('template/css/ruang-admin.min.css') }}" rel="stylesheet">
+    <script>
+        (function () {
+            var resetKey = 'swiftlink-ios-cache-reset-20260916';
+            try {
+                if (window.localStorage.getItem(resetKey)) return;
+                window.localStorage.setItem(resetKey, '1');
+            } catch (error) {
+                return;
+            }
+
+            var cleanup = [];
+            if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+                cleanup.push(navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    return Promise.all(registrations.map(function (registration) {
+                        return registration.unregister();
+                    }));
+                }));
+            }
+            if ('caches' in window && window.caches.keys) {
+                cleanup.push(window.caches.keys().then(function (keys) {
+                    return Promise.all(keys.map(function (key) {
+                        return window.caches.delete(key);
+                    }));
+                }));
+            }
+            if (cleanup.length) {
+                Promise.all(cleanup).then(function () { window.location.reload(); });
+            }
+        }());
+    </script>
     @vite(['resources/sass/swiftlink.scss', 'resources/js/app.js'])
     <style>
         a, a:hover, a:focus, a:active { text-decoration: none !important; }

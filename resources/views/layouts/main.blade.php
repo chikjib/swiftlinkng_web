@@ -4,6 +4,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>{{ config('app.name', 'Laravel') }}</title>
     <meta name="title" content="Swiftlinkng - Get Connected with ease">
     <meta name="description" content="Buy data, Buy airtime and Pay Bills @ a discount with Swiftlinkng. Connect at ease with loved ones and business.">
@@ -54,6 +57,36 @@
     <link rel="stylesheet" id="langLtr" href="{{ asset('frontend/css/insur.css') }}" />
     <link rel="stylesheet" href="{{ asset('frontend/css/insur-responsive.css') }}" />
     <link rel="stylesheet" href="{{ asset('frontend/css/color-3.css') }}" />
+    <script>
+        (function () {
+            var resetKey = 'swiftlink-ios-cache-reset-20260916';
+            try {
+                if (window.localStorage.getItem(resetKey)) return;
+                window.localStorage.setItem(resetKey, '1');
+            } catch (error) {
+                return;
+            }
+
+            var cleanup = [];
+            if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+                cleanup.push(navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    return Promise.all(registrations.map(function (registration) {
+                        return registration.unregister();
+                    }));
+                }));
+            }
+            if ('caches' in window && window.caches.keys) {
+                cleanup.push(window.caches.keys().then(function (keys) {
+                    return Promise.all(keys.map(function (key) {
+                        return window.caches.delete(key);
+                    }));
+                }));
+            }
+            if (cleanup.length) {
+                Promise.all(cleanup).then(function () { window.location.reload(); });
+            }
+        }());
+    </script>
     @vite(['resources/sass/swiftlink.scss', 'resources/js/app.js'])
     <style>
         :root {

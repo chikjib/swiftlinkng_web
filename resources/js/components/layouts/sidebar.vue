@@ -14,12 +14,12 @@
     tabindex="-1"
     aria-label="Main navigation"
   >
-    <li v-if="isOpen" class="swift-sidebar-close-item">
+    <li class="swift-sidebar-close-item">
       <button
         type="button"
         class="swift-sidebar-close"
         aria-label="Close navigation menu"
-        @click="$emit('close-sidebar')"
+        @click="closeSidebar"
       >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
@@ -405,6 +405,9 @@ export default {
     },
   },
   watch: {
+    isOpen(isOpen) {
+      if (isOpen) this.clearForcedClose();
+    },
     "$route.path"() {
       if (this.isBulkDataRoute) {
         this.bulkDataOpen = true;
@@ -415,6 +418,24 @@ export default {
     this.bulkDataOpen = this.isBulkDataRoute;
   },
   methods: {
+    closeSidebar() {
+      const sidebar = this.$el;
+      if (sidebar && sidebar.style) {
+        sidebar.style.setProperty('-webkit-transform', 'translate3d(-110%, 0, 0)', 'important');
+        sidebar.style.setProperty('transform', 'translate3d(-110%, 0, 0)', 'important');
+        sidebar.style.setProperty('visibility', 'hidden', 'important');
+        sidebar.style.setProperty('pointer-events', 'none', 'important');
+      }
+      this.$emit('close-sidebar');
+    },
+    clearForcedClose() {
+      const sidebar = this.$el;
+      if (!sidebar || !sidebar.style) return;
+      sidebar.style.removeProperty('-webkit-transform');
+      sidebar.style.removeProperty('transform');
+      sidebar.style.removeProperty('visibility');
+      sidebar.style.removeProperty('pointer-events');
+    },
     logout() {
       this.axios
         .post(`${this.$appUrl}/api/logout`)
@@ -439,7 +460,7 @@ export default {
   .swift-sidebar-close-item {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 20;
     display: flex;
     flex: 0 0 auto;
     justify-content: flex-end;

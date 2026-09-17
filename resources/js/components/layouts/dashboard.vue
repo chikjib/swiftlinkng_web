@@ -338,8 +338,10 @@ body.swift-sidebar-open {
     position: fixed !important;
     inset: 0 auto 0 0;
     z-index: 1080;
-    width: min(84vw, 310px) !important;
-    min-width: min(84vw, 310px) !important;
+    width: 260px !important;
+    width: min(72vw, 270px) !important;
+    min-width: 0 !important;
+    max-width: 72vw !important;
     min-height: 100vh !important;
     min-height: -webkit-fill-available !important;
     min-height: 100dvh !important;
@@ -361,7 +363,8 @@ body.swift-sidebar-open {
     scrollbar-color: #b7bac2 transparent;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
-    transform: translate3d(-105%, 0, 0) !important;
+    -webkit-transform: translate3d(-110%, 0, 0) !important;
+    transform: translate3d(-110%, 0, 0) !important;
     visibility: hidden;
     pointer-events: none;
     will-change: transform;
@@ -375,6 +378,7 @@ body.swift-sidebar-open {
   .swift-dashboard-shell.sidebar-toggled .swift-sidebar,
   .swift-dashboard-shell .swift-sidebar.toggled {
     margin-left: 0 !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
     transform: translate3d(0, 0, 0) !important;
     visibility: visible;
     pointer-events: auto;

@@ -1086,17 +1086,23 @@ input[type="radio"] {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 1060;
-    width: min(84vw, 310px) !important;
-    min-width: min(84vw, 310px);
+    width: 260px !important;
+    width: min(72vw, 270px) !important;
+    min-width: 0 !important;
+    max-width: 72vw !important;
     overflow-y: auto;
-    transform: translateX(-105%);
+    -webkit-transform: translate3d(-110%, 0, 0);
+    transform: translate3d(-110%, 0, 0);
     transition: transform 0.24s ease;
   }
 
   .swift-sidebar.toggled {
+    width: 260px !important;
+    width: min(72vw, 270px) !important;
+    min-width: 0 !important;
+    max-width: 72vw !important;
+    -webkit-transform: translate3d(0, 0, 0);
     transform: translateX(0);
-    width: min(84vw, 310px) !important;
-    min-width: min(84vw, 310px) !important;
     margin-left: 0 !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
@@ -3000,12 +3006,15 @@ input[type="radio"] {
 @media (max-width: 767.98px) {
   .swift-sidebar.toggled,
   .swift-customer-shell .swift-sidebar--customer.toggled {
-    width: min(84vw, 310px) !important;
-    min-width: min(84vw, 310px) !important;
+    width: 260px !important;
+    width: min(72vw, 270px) !important;
+    min-width: 0 !important;
+    max-width: 72vw !important;
     margin-left: 0 !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    transform: translateX(0) !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
   }
 
   .swift-sidebar.toggled .nav-item,

@@ -43,7 +43,7 @@ class SubcategoryController extends BaseController
 
         $products = SubcategoryResource::collection($data);
 
-        return $products;
+        return $this->withoutClientCache($products);
     }
     
     public function load_accounting(Request $request)
@@ -58,7 +58,7 @@ class SubcategoryController extends BaseController
         $data =  Subcategory::where('status', 1)->whereIn('category_id', [1, 2, 3, 4, 6])->get();
         $products = PlansResource::collection($data);
 
-        return $products;
+        return $this->withoutClientCache($products);
     }
 
     public function load_plans(Request $request)
@@ -70,7 +70,15 @@ class SubcategoryController extends BaseController
         
         //\Log::info(print_r($products, true));
 
-        return $products;
+        return $this->withoutClientCache($products);
+    }
+
+    private function withoutClientCache($resource)
+    {
+        return $resource->response()
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**

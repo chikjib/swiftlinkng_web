@@ -105,6 +105,7 @@ export default {
       scriptLoaded: null,
       selectedNetwork: "",
       activePicker: "",
+      catalogueRefreshTimer: null,
     };
   },
 
@@ -117,7 +118,9 @@ export default {
         { key: "9mobile", label: "9mobile" },
       ];
       return definitions.map((item) => {
-        const match = (this.subcategories.data || []).find((category) => this.networkKey(category.title) === item.key);
+        const match = (this.subcategories.data || []).find(
+          (category) => this.networkKey(category.title, category.subcat_image) === item.key
+        );
         return match ? { ...item, image: `/template/images/services/${match.subcat_image || `${item.key}.png`}` } : null;
       }).filter(Boolean);
     },
@@ -128,7 +131,9 @@ export default {
       return this.categoryId === 13 ? 'Select an Airtime plan' : 'Select a data plan';
     },
     filteredCategories() {
-      return (this.subcategories.data || []).filter((category) => this.networkKey(category.title) === this.selectedNetwork);
+      return (this.subcategories.data || []).filter(
+        (category) => this.networkKey(category.title, category.subcat_image) === this.selectedNetwork
+      );
     },
     selectedCategory() {
       return (this.subcategories.data || []).find((category) => category.id === this.form.subcategory_id) || null;
@@ -143,6 +148,17 @@ export default {
 
   mounted() {
     this.loadplan();
+    window.addEventListener("focus", this.refreshCatalogue);
+    document.addEventListener("visibilitychange", this.refreshVisibleCatalogue);
+    this.catalogueRefreshTimer = window.setInterval(this.refreshCatalogue, 60000);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener("focus", this.refreshCatalogue);
+    document.removeEventListener("visibilitychange", this.refreshVisibleCatalogue);
+    if (this.catalogueRefreshTimer) {
+      window.clearInterval(this.catalogueRefreshTimer);
+    }
   },
 
   created() {
@@ -154,13 +170,19 @@ export default {
   },
 
   methods: {
-    networkKey(title) {
-      const value = String(title || "").toLowerCase();
+    networkKey(title, image = "") {
+      const value = `${String(title || "")} ${String(image || "")}`.toLowerCase();
       if (value.includes("9mobile") || value.includes("etisalat")) return "9mobile";
       if (value.includes("airtel")) return "airtel";
       if (value.includes("glo")) return "glo";
       if (value.includes("mtn")) return "mtn";
       return "";
+    },
+    refreshCatalogue() {
+      this.loadplan(true);
+    },
+    refreshVisibleCatalogue() {
+      if (document.visibilityState === "visible") this.refreshCatalogue();
     },
     categoryLabel(title) {
       const original = String(title || "").trim();
@@ -186,12 +208,7 @@ export default {
       this.activePicker = '';
     },
     categoryPlanCount(category) {
-      try {
-        const plans = typeof category.products === 'string' ? JSON.parse(category.products) : category.products;
-        return Array.isArray(plans) ? plans.length : 0;
-      } catch (_) {
-        return 0;
-      }
+      return this.normalizePlans(category.products).length;
     },
     categoryIcon(title) {
       const value = String(title || '').toLowerCase();
@@ -428,17 +445,45 @@ export default {
         });
     },
 
-    loadplan() {
+    loadplan(preserveSelection = false) {
       axios
-        .get(`/api/subcategory?category_id=${this.categoryId}`, {
+        .get(`/api/subcategory`, {
+          params: {
+            category_id: this.categoryId,
+            _catalogue_version: Date.now(),
+          },
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
           },
         })
         .then((response) => {
-          console.log(response.data);
           this.subcategories = response.data;
+          if (!preserveSelection) return;
+
+          const categories = this.subcategories.data || [];
+          const selectedCategory = categories.find(
+            (category) => category.id === this.form.subcategory_id
+          );
+
+          if (!selectedCategory) {
+            this.form.subcategory_id = undefined;
+            this.form.plan_id = undefined;
+            this.form.amount = "";
+            this.plans = [];
+            this.description2 = "";
+            if (!this.networkOptions.some((network) => network.key === this.selectedNetwork)) {
+              this.selectedNetwork = "";
+            }
+            return;
+          }
+
+          this.applyCategoryPlans(selectedCategory);
+          if (!this.plans.some((plan) => plan.plan === this.form.plan_id)) {
+            this.form.plan_id = undefined;
+            this.form.amount = "";
+          }
         });
     },
 
@@ -487,13 +532,48 @@ export default {
       var c = this.subcategories.data.filter(
         (sub) => sub.id === this.form.subcategory_id
       );
-      this.networkImage = c[0].subcat_image;
-      var content = JSON.parse(c[0].products);
-      this.description2 = c[0].description2;
+      if (!c.length) {
+        this.loading = false;
+        this.plans = [];
+        return;
+      }
+      this.applyCategoryPlans(c[0]);
 
       this.loading = false;
+    },
 
-      this.plans = content;
+    applyCategoryPlans(category) {
+      this.plans = this.normalizePlans(category.products);
+      this.networkImage = category.subcat_image;
+      this.description2 = category.description2;
+    },
+
+    normalizePlans(rawPlans) {
+      let value = rawPlans;
+
+      // Older records are JSON strings while some newly created records can
+      // arrive double-encoded or wrapped by an object.
+      for (let depth = 0; depth < 3 && typeof value === "string"; depth += 1) {
+        const trimmed = value.trim();
+        if (!trimmed) return [];
+        try {
+          value = JSON.parse(trimmed);
+        } catch (_) {
+          return [];
+        }
+      }
+
+      if (Array.isArray(value)) return value;
+      if (!value || typeof value !== "object") return [];
+      if (value.plan) return [value];
+
+      const wrappedPlans = value.plans ?? value.products ?? value.data;
+      if (wrappedPlans !== undefined) return this.normalizePlans(wrappedPlans);
+
+      // Accept objects saved with numeric plan keys, e.g. {"0": {...}}.
+      return Object.values(value).filter(
+        (plan) => plan && typeof plan === "object" && plan.plan
+      );
     },
 
     getUserLevel(content) {

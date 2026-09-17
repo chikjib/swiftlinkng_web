@@ -45,6 +45,8 @@ export default defineConfig({
         },
     },
     build: {
+        target: 'safari15',
+        cssTarget: 'safari13',
         sourcemap: false,
         chunkSizeWarningLimit: 1600,
     },

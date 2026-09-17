@@ -52,9 +52,12 @@ class Subcategory extends Model
         $result = null;
 
         if (in_array((int) $this->category_id, [1, 13], true)) {
-            $productCollection = collect(json_decode($this->products));
+            $productCollection = collect($this->decodeProductPlans());
             $result =
                 $productCollection
+                ->filter(function ($item) {
+                    return is_object($item) && isset($item->plan);
+                })
                 ->map(
                     function ($item, $key) {
                         // $item = $item->first(); //as item is a collection of models
@@ -68,6 +71,41 @@ class Subcategory extends Model
 
 
         return $result;
+    }
+
+    private function decodeProductPlans(): array
+    {
+        $value = $this->products;
+
+        for ($depth = 0; $depth < 3 && is_string($value); $depth++) {
+            $value = json_decode($value);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return [];
+            }
+        }
+
+        if (is_object($value)) {
+            if (isset($value->plans)) {
+                $value = $value->plans;
+            } elseif (isset($value->products)) {
+                $value = $value->products;
+            } elseif (isset($value->data)) {
+                $value = $value->data;
+            } elseif (isset($value->plan)) {
+                $value = [$value];
+            } else {
+                $value = array_values((array) $value);
+            }
+        }
+
+        for ($depth = 0; $depth < 3 && is_string($value); $depth++) {
+            $value = json_decode($value);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return [];
+            }
+        }
+
+        return is_array($value) ? array_values($value) : [];
     }
     public function getAmountDiscountAttribute()
     {

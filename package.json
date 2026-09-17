@@ -7,6 +7,13 @@
         "prod": "npm run build",
         "production": "npm run build"
     },
+    "browserslist": [
+        "iOS >= 15",
+        "Safari >= 15",
+        "Chrome >= 80",
+        "Firefox >= 78",
+        "Edge >= 80"
+    ],
     "devDependencies": {
         "@popperjs/core": "^2.10.2",
         "@types/google.maps": "^3.48.7",
