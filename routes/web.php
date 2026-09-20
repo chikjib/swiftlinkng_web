@@ -92,6 +92,7 @@ Route::webhooks('palmpay-webhook', 'palmpay-webhook');
 Route::webhooks('opay-wallet-webhook', 'opay-wallet-webhook')
     ->middleware('throttle:120,1');
 Route::webhooks('budpay-webhook', 'budpay-webhook');
+Route::webhooks('coolsub-webhook', 'coolsub-webhook');
 
 //MTN SME (WEBSITE)
 Route::get('/mtn-sme-cloud-login',[App\Http\Controllers\MtnSmeController::class,
