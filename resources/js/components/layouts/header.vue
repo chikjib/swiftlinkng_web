@@ -102,7 +102,7 @@
 
     <!-- Modal Logout -->
     <div
-      class="modal fade"
+      class="modal fade swift-logout-modal"
       id="logoutModal"
       tabindex="-1"
       role="dialog"
@@ -242,6 +242,30 @@ export default {
 }
 
 @media (max-width: 767.98px) {
+  .swift-logout-modal {
+    z-index: 2200;
+    padding: 0 14px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .swift-logout-modal .modal-dialog {
+    display: block !important;
+    width: min(100%, 440px) !important;
+    min-height: 0 !important;
+    margin: calc(16px + env(safe-area-inset-top, 0px)) auto 24px !important;
+  }
+
+  .swift-logout-modal .modal-content {
+    max-height: calc(100vh - 56px) !important;
+    max-height: calc(100dvh - 56px) !important;
+    border-radius: 18px !important;
+  }
+
+  .swift-logout-modal .modal-body {
+    max-height: none;
+  }
+
   .swift-admin-app-downloads {
     min-width: 76px;
     gap: 4px;
