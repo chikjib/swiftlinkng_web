@@ -56,59 +56,52 @@ class OrderController extends BaseController
      */
     public function index(Request $request)
     {
-
-
+        // Keep list responses small and avoid one query per row for the
+        // subcategory and category accessed by OrderResource.
+        $orderListRelations = [
+            'user:id,firstname,phone,email',
+            'subcategory:id,category_id,title',
+            'subcategory.category:id,title',
+        ];
         $search = $request->input('search');
         $user_id = $request->input('user_id');
-        
-        if (isset($request->search)) {
-            $category = Category::where('title', $request->search)->first();
-        }
+        $searchableOrderFields = [
+            'phone', 'description', 'ref', 'iuc', 'meter', 'response', 'created_at',
+        ];
 
-        if ($request->has('search')) {
+        if ($request->filled('search') || $request->filled('status')) {
+            $query = Order::with($orderListRelations);
 
-            if ($request->has('field') && $request->field != "Search By" && $request->has('status') && $request->status != "Select Status") {  // 3 active variable search
-                $data = Order::with(['user:id,firstname,phone,email'])
-                    ->when($request->field === 'type' && $category, function ($query) use ($category) {
-                        $query->whereHas('subcategory', function ($q) use ($category) {
-                            $q->where('category_id', $category->id);
-                        });
-                    }, function ($query) use ($request) {
-                        if (!empty($request->search)) {
-                            $query->where($request->field, 'like', '%' . $request->search . '%');
-                        }
-                    })
-                    ->when(!empty($request->status), function ($query) use ($request) {
-                        $query->where('status', $request->status);
-                    })
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(20);
-                $products = OrderResource::collection($data);
-            } else { 
-                // 1 variable
-                if ($request->has('field') && $request->field == "type") {
-                   $data = Order::with(['user:id,firstname,phone,email'])
-                        ->whereHas('subcategory', function ($query) use ($category) {
-                            $query->where('category_id', $category->id);
-                        })
-                        ->orderBy('created_at', 'desc')
-                        ->paginate(20);
-                } else {
-                    $data = Order::with(['user:id,firstname,phone,email'])
-                        //->where('bal', '>', 0)->orWhere('prev_bal', '>', 0)
-                        ->where($request->field, 'like', '%' . $search . '%')
-                        ->orderBy('created_at', 'desc')->paginate(20);
-                }
-                $products = OrderResource::collection($data);
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
             }
 
-            return $products;
+            if ($request->filled('search')) {
+                $field = $request->input('field');
+                $term = $request->input('search');
+
+                if ($field === 'type') {
+                    $query->whereHas('subcategory.category', function ($categoryQuery) use ($term) {
+                        $categoryQuery->where('title', 'like', '%' . $term . '%');
+                    });
+                } elseif (in_array($field, ['firstname', 'email'], true)) {
+                    $query->whereHas('user', function ($userQuery) use ($field, $term) {
+                        $userQuery->where($field, 'like', '%' . $term . '%');
+                    });
+                } elseif (in_array($field, $searchableOrderFields, true)) {
+                    $query->where($field, 'like', '%' . $term . '%');
+                }
+            }
+
+            $data = $query->orderByDesc('created_at')->paginate(20);
+
+            return OrderResource::collection($data);
         }
 
         if ($request->has('search_status')) {
             $search = $request->search_status;
             if ($request->field == 'userphone') {
-                $data = Order::with(['user:id,firstname,phone,email'])
+                $data = Order::with($orderListRelations)
                     ->where('status', 0)
                     ->WhereHas(
                         'user',
@@ -118,7 +111,7 @@ class OrderController extends BaseController
                     )->orderBy('created_at', 'desc')->paginate(20);
                 $products = OrderResource::collection($data);
             } else {
-                $data = Order::with(['user:id,firstname,phone,email'])
+                $data = Order::with($orderListRelations)
                     ->where('status', 0)
                     ->where($request->field, 'like', '%' . $search . '%')
                     ->orderBy('created_at', 'desc')->paginate(20);
@@ -130,7 +123,7 @@ class OrderController extends BaseController
         if ($request->has('section') && $request->section == 1) {
             \Log::info("here works too");
 
-            $data = Order::with(['user:id,firstname,phone,email'])
+            $data = Order::with($orderListRelations)
                 // ->where('bal', '>', 0)->orWhere('prev_bal', '>', 0)
                 ->where('status', 0)->orderBy('created_at', 'desc')->paginate(20);
             $products = OrderResource::collection($data);
@@ -142,14 +135,14 @@ class OrderController extends BaseController
             $search = $request->search_user;
             if ($request->has('stats')) {
                 if ($request->has('field') && $request->field != "Search By" && $request->has('status') && $request->status != "Select Status") {  // 3 active variable search
-                    $data = Order::with(['user:id,firstname,phone,email'])
+                    $data = Order::with($orderListRelations)
                         ->where('user_id', $user_id)
                         ->where($request->field, 'like', '%' . $search . '%')
                         ->where('status', $request->status)
                         ->orderBy('created_at', 'desc')->paginate(20);
                     $products = OrderResource::collection($data);
                 } else { // 1 variable
-                    $data = Order::with(['user:id,firstname,phone,email'])
+                    $data = Order::with($orderListRelations)
                         ->where('user_id', $user_id)
                         ->where($request->field, 'like', '%' . $search . '%')
                         ->orderBy('created_at', 'desc')->paginate(20);
@@ -182,14 +175,14 @@ class OrderController extends BaseController
                 // }
             } else {
                 if ($request->has('field') && $request->field != "Search By" && $request->has('status') && $request->status != "Select Status") {  // 3 active variable search
-                    $data = Order::with(['user:id,firstname,phone,email'])
+                    $data = Order::with($orderListRelations)
                         ->where('user_id', $user_id)
                         ->where($request->field, 'like', '%' . $search . '%')
                         ->where('status', $request->status)
                         ->orderBy('created_at', 'desc')->paginate(20);
                     $products = OrderResource::collection($data);
                 } else { // 1 variable
-                    $data = Order::with(['user:id,firstname,phone,email'])
+                    $data = Order::with($orderListRelations)
                         ->where('user_id', $user_id)
                         ->where($request->field, 'like', '%' . $search . '%')
                         ->orderBy('created_at', 'desc')->paginate(20);
@@ -248,14 +241,14 @@ class OrderController extends BaseController
             $user_id = $request->user;
 
             if ($request->has('stats')) {
-                $data = Order::with(['user:id,firstname,phone,email'])
+                $data = Order::with($orderListRelations)
                     //->where('bal', '>', 0)->orWhere('prev_bal', '>', 0)
                     ->where('user_id', $user_id)
                     //->where('status', '>', 0)
                     ->orderBy('created_at', 'desc')->paginate(20);
                 $products = OrderResource::collection($data);
             } else {
-                $data = Order::with(['user:id,firstname,phone,email'])
+                $data = Order::with($orderListRelations)
                     //->where('bal', '>', 0)->orWhere('prev_bal', '>', 0)
                     ->where('user_id', $user_id)->orderBy('created_at', 'desc')->paginate(20);
                 $products = OrderResource::collection($data);
@@ -265,7 +258,7 @@ class OrderController extends BaseController
             return $products;
         }
 
-        $data = Order::with(['user:id,firstname,phone,email'])
+        $data = Order::with($orderListRelations)
             ->orderBy('created_at', 'desc')->paginate(20);
 
         // if (!is_null($request->limit)) {
@@ -6132,6 +6125,9 @@ class OrderController extends BaseController
             elseif (!is_null($subcategory->description) && $subcategory->description == "INTEGRITYPORTAL") {
                 
                 // $plan_id = $getSelectedProduct->code;
+                $network_id = $this->parseTBCHPortalID(strtolower($network));
+                $plan_id = isset($getSelectedProduct->tbch_code) ? $getSelectedProduct->tbch_code : null;
+
                 $product_code = $getSelectedProduct->integrity_product_code;
                 //$network_id = $this->parseAutoPilotNetworkID(strtolower($network));
                 //$plan_id = isset($getSelectedProduct->vtuplug_product_id) ? $getSelectedProduct->vtuplug_product_id : null;
@@ -6156,9 +6152,540 @@ class OrderController extends BaseController
                     " at N" . $amountActual;
                 $order->status = 0;
                 $order->save();
-                
 
-                try {
+                if($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 3GB for 7 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+                
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 1GB for 14 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+                    
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 2GB for 14 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+                    
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 3GB for 14 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+                    
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 500MB for 30 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 3GB for 30 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 5GB for 30 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 20GB for 30 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 15GB for 30 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+
+                }elseif($subcategory->id == 45 && strtolower($getSelectedProduct->plan) == strtolower("GET 10GB for 30 Days")){
+                    try {
+                    $response = $this->tbchPortal($network_id, $plan_id, $phone, $ref);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+                    \Log::info("TBCH PORTAL RESPONSE");
+                    \Log::info(print_r($response, true));
+    
+                    if ($response['code'] == 109 || $response['code'] == 110 || $response['code'] == 111 || $response['code'] == 112 || $response['code'] == 113 || $response['code'] == 114 || $response['code'] == 115 || $response['code'] == 116 || $response['code'] == 120 || $response['code'] == 121 || $response['code'] == 122 || $response['code'] == 310 || $response['code'] == 311 || $response['code'] == 401 || $response['code'] == 402 || $response['code'] == 601) {
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+    
+                    } elseif (!isset($response) || is_null($response) || $response['data']['status'] == "Pending" || $response['data']['status'] == "Processing") {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    } elseif ($response['code'] == "00" && $response['data']['status'] == "Successful") {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['gateway_response'];
+                        $updateOrder->save();
+                        $msg = $response['data']['gateway_response'] . " TbchPortal Ref: " . $response['data']['customer_ref'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->tbch_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response['data']['gateway_response']);
+                }
+
+                }else{
+                    try {
                     $response = $this->integrityPortal($product_code, $phone, $ref);
 
                 } catch (\Throwable $e) {
@@ -6216,6 +6743,8 @@ class OrderController extends BaseController
                     return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
 
                 }
+                }
+                
                 
             
             }

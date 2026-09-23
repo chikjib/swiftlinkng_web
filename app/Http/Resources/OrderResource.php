@@ -18,7 +18,7 @@ class OrderResource extends JsonResource
             'id' => $this->id,
             'ref' => $this->ref,
             'user' => $this->user,
-            'category' => $this->subcategory->category,
+            'category' => $this->subcategory ? $this->subcategory->category : null,
             'subcategory' => $this->subcategory,
             'plan' => $this->plan,
             'amount' => $this->amount,

@@ -5,6 +5,9 @@
 
   <div v-else class="col-xl-12 col-lg-12">
       <h4 class="card-title">All Transactions</h4>
+      <div v-if="errorflag" class="alert alert-danger" role="alert">
+        {{ errorflag }}
+      </div>
       <div class="row">
         <div class="col-md-9 mb-2">
           <form @submit.prevent="getResults" class="form-inline">
@@ -249,27 +252,40 @@ export default {
       showMoreDes: false,
       showMorePhone: false,
       form: {},
+      errorflag: "",
     };
   },
 
   mounted() {
-    this.list();
-    if (localStorage.keyword) this.keyword = localStorage.keyword;
-    if (localStorage.keyword) this.field = localStorage.field;
+    this.keyword = localStorage.getItem("allTransactions.keyword") || "";
+    this.field = localStorage.getItem("allTransactions.field") || "";
+    this.status = localStorage.getItem("allTransactions.status") || "";
+
+    if ((this.keyword && this.field) || this.status !== "") {
+      this.getResults();
+    } else {
+      this.list();
+    }
   },
 
   watch: {
     keyword(newKeyword) {
-      localStorage.keyword = newKeyword;
+      this.storeFilter("allTransactions.keyword", newKeyword);
     },
     field(newField) {
-      localStorage.field = newField;
+      this.storeFilter("allTransactions.field", newField);
+    },
+    status(newStatus) {
+      this.storeFilter("allTransactions.status", newStatus);
     },
   },
   methods: {
-    persist() {
-      localStorage.keyword = this.keyword;
-      localStorage.field = this.field;
+    storeFilter(key, value) {
+      if (value === "" || value == null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    },
+    requestErrorMessage(error) {
+      return error?.response?.data?.message || "Transactions could not be loaded. Please try again.";
     },
     list(page) {
       if (typeof page === "undefined") {
@@ -279,16 +295,9 @@ export default {
 
       var limited = this.limit == null ? 0 : this.limit;
       this.isloading = true;
+      this.errorflag = "";
 
-      if(localStorage.keyword != null && localStorage.field != null){
-        this.keyword = localStorage.keyword;
-        this.field = localStorage.field;
-
-        this.getResults(page);
-
-
-      } else {
-        axios
+      axios
         .get(`/api/orders?page=${page}&limit=${limited}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -296,17 +305,15 @@ export default {
           },
         })
         .then(({ data }) => {
-          console.log(data);
           this.transactions = data;
-          this.isloading = false;
         })
-        .catch(({ response }) => {
-          this.$toasted.show(error.response.data.data);
+        .catch((error) => {
+          this.errorflag = this.requestErrorMessage(error);
+          this.$toasted.show(this.errorflag);
+        })
+        .finally(() => {
           this.isloading = false;
         });
-      }
-
-
     },
 
     resetList(page){
@@ -314,56 +321,59 @@ export default {
         page = 1;
       }
 
-      var limited = this.limit == null ? 0 : this.limit;
-      this.isloading = true;
-
-      var status = 0;
+      this.keyword = "";
+      this.field = "";
+      this.status = "";
       localStorage.removeItem("keyword");
       localStorage.removeItem("field");
-      axios
-        .get(`/api/orders?page=${page}&limit=${limited}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        })
-        .then(({ data }) => {
-          this.transactions = data;
-          // $("#datatable").DataTable();
-        //   console.log(data);
-
-          this.isloading = false;
-          window.location.reload();
-        })
-        .catch(({ response }) => {
-          this.$toasted.show(error.response.data.data);
-          this.isloading = false;
-        });
+      localStorage.removeItem("allTransactions.keyword");
+      localStorage.removeItem("allTransactions.field");
+      localStorage.removeItem("allTransactions.status");
+      this.searching = false;
+      this.list(page);
     },
 
     getResults(page) {
       if (typeof page === "undefined") {
         page = 1;
       }
+      if (!this.keyword && this.status === "") {
+        this.searching = false;
+        this.list(page);
+        return;
+      }
+
+      if (this.keyword && !this.field) {
+        this.errorflag = "Select a field to search by.";
+        return;
+      }
+
       this.isloading = true;
       this.searching = true;
+      this.errorflag = "";
 
       axios
-        .get(
-          `/api/orders?search=${this.keyword}&field=${this.field}&status=${this.status}&page=${page}`,
-          {
+        .get(`/api/orders`, {
+            params: {
+              search: this.keyword,
+              field: this.field,
+              status: this.status,
+              page,
+            },
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          }
-        )
+          })
         .then((response) => {
-          console.log(response.data);
-          this.isloading = false;
-
           this.transactions = response.data;
-          // this.isloading = false;
+        })
+        .catch((error) => {
+          this.errorflag = this.requestErrorMessage(error);
+          this.$toasted.show(this.errorflag);
+        })
+        .finally(() => {
+          this.isloading = false;
         });
     },
 

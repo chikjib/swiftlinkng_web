@@ -277,6 +277,7 @@ trait IntegrationsTrait
     public function VtPassAirtime($serviceID, $amount, $phone, $ref)
     {
         $serviceID = strtolower($serviceID);
+        \Log::info($serviceID);
 
         $response = Http::withHeaders([
             'api-key' => config('app.vtpassApiKey'),
@@ -284,7 +285,7 @@ trait IntegrationsTrait
             'Content-Type' => 'application/json',
 
         ])->post(config('app.vtPassBaseUrl')  . "/pay", [
-                'serviceID' => $serviceID,
+                'serviceID' => $serviceID == "9mobile" ? "etisalat" : $serviceID,
                 'request_id' => $ref,
                 'amount' => $amount,
                 'phone' => $phone,
