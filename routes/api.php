@@ -43,7 +43,7 @@ use App\Http\Controllers\API\TransactionPinController;
 Route::controller(RegisterController::class)->group(function () {
     Route::post('register', 'register')->middleware('throttle:5,60');
     Route::post('email/verification/resend', 'resendVerification')->middleware('throttle:3,60');
-    Route::post('login', [ 'as' => 'login', 'uses' => 'login'])->middleware('throttle:5,1');
+    Route::post('login', [ 'as' => 'login', 'uses' => 'login'])->middleware('throttle:login');
 
     // Route::post('login', 'login'); 
     

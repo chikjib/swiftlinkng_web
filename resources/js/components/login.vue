@@ -141,7 +141,10 @@ export default {
       this.showPassword = !this.showPassword;
     },
     login() {
+      if (this.processing) return;
+
       this.processing = true;
+      this.errorflag = "";
 
       if (this.user.email == "") {
         this.processing = false;
@@ -166,12 +169,8 @@ export default {
         })
         .catch((error) => {
           this.processing = false;
-
-          // if (error.response.status === 404) {
-          this.errorflag = error.response.data.message;
-          //}
-
-          // console.log(error.response.status);
+          this.errorflag = error?.response?.data?.message
+            || "Unable to sign in right now. Please try again.";
         });
       // });
     },
