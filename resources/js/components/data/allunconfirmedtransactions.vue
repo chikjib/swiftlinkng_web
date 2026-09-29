@@ -355,7 +355,9 @@ export default {
             this.selectAll = false;
 
         } catch(error){
-            console.error("Error updating status: ", error)
+            this.$toasted.show(error.response?.data?.message || "Unable to update transactions. Please try again.");
+        } finally {
+            this.processing = false;
         }
     },
     toggleSelectAll(event){
@@ -478,7 +480,7 @@ export default {
         this.keyword = localStorage.keyword;
         this.field = localStorage.field;
 
-        this.reloadResults(this.keyword,this.field);
+        this.reloadResults(page);
 
 
       }else{
@@ -504,7 +506,7 @@ export default {
       }
     },
 
-    reloadResults(page,keyword,field) {
+    reloadResults(page) {
       if (typeof page === "undefined") {
         page = 1;
       }
@@ -513,7 +515,7 @@ export default {
       // this.isloading = true;
       axios
         .get(
-          `/api/orders?search_status=${this.keyword}&field=${this.field}&page=${page}&status=0`,
+          `/api/orders?search_status=${encodeURIComponent(this.keyword)}&field=${encodeURIComponent(this.field)}&page=${page}&status=0`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -564,7 +566,7 @@ export default {
       // this.isloading = true;
       axios
         .get(
-          `/api/orders?search_status=${this.keyword}&field=${this.field}&page=${page}&status=0`,
+          `/api/orders?search_status=${encodeURIComponent(this.keyword)}&field=${encodeURIComponent(this.field)}&page=${page}&status=0`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

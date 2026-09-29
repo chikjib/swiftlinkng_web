@@ -69,7 +69,8 @@ class OrderController extends BaseController
             'phone', 'description', 'ref', 'iuc', 'meter', 'response', 'created_at',
         ];
 
-        if ($request->filled('search') || $request->filled('status')) {
+        if (!$request->has('search_status') && !$request->has('search_user')
+            && ($request->filled('search') || $request->filled('status'))) {
             $query = Order::with($orderListRelations);
 
             if ($request->filled('status')) {
@@ -12855,7 +12856,7 @@ class OrderController extends BaseController
                 }
             } else if ($request->value == "reverse") {
                 $subcategory = Subcategory::find($pendingOrders->subcategory_id);
-                if ($subcategory->category_id == 1 || $subcategory->category_id == 2 || $subcategory->category_id == 3 || $subcategory->category_id == 4) {
+                if ($subcategory && in_array((int) $subcategory->category_id, [1, 2, 3, 4, 6, 13], true)) {
 
 
                     $this->refundUser(
@@ -12882,6 +12883,7 @@ class OrderController extends BaseController
                     // }
                 }
 
+                return $this->sendError("This transaction type cannot be reversed.");
             }
 
         } else {
@@ -13104,15 +13106,19 @@ class OrderController extends BaseController
 
         }elseif($request->status == "reverse"){ 
 
-            foreach ($transaction_ids as $id) {
-                $updOrder = Order::find($id);
+            $reversed = 0;
+            foreach (array_unique($transaction_ids) as $id) {
+                $updOrder = Order::where('status', 0)->where('id', $id)->first();
+                if (!$updOrder) {
+                    continue;
+                }
 
                 $subcategory = Subcategory::find($updOrder->subcategory_id);
-                if ($subcategory->category_id == 1 || $subcategory->category_id == 2 || $subcategory->category_id == 3 || $subcategory->category_id == 4 || $subcategory->category_id == 6) {
+                if ($subcategory && in_array((int) $subcategory->category_id, [1, 2, 3, 4, 6, 13], true)) {
     
                     $response_msg = null;
                     
-                    $this->refundUser(
+                    $refund = $this->refundUser(
                         $updOrder->ref,
                         $response_msg,
                         $updOrder->subtotal,
@@ -13121,10 +13127,17 @@ class OrderController extends BaseController
                             'prev_bal' => $updOrder->bal
                         ]
                     );
+                    if ($refund instanceof Order) {
+                        $reversed++;
+                    }
                 }
             }
 
-            return $this->sendResponse(count($transaction_ids). " Transactions failed and reversed successfully", count($transaction_ids). " Transactions failed and reversed successfully");
+            if ($reversed === 0) {
+                return $this->sendError("No eligible pending transactions were reversed.");
+            }
+            $message = $reversed . " Transactions reversed successfully";
+            return $this->sendResponse($message, $message);
         }
         
         }else{
