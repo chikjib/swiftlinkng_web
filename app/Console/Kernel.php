@@ -27,6 +27,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('betting:reconcile')->everyMinute()->withoutOverlapping();
+
+        $schedule->command('esim:reconcile')->everyMinute()->withoutOverlapping();
+
         $schedule->command('deletependingtransaction:cron')->daily();
 
         $schedule->command('refundfailedtransactionvtpass:cron')->everyMinute();

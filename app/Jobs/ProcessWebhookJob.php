@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\Subcategory;
-use App\Services\FundingRecoveryService;
 use App\Traits\WalletTrait;
 use App\Traits\TelegramTrait;
 use App\Traits\ReferenceTrait;
@@ -22,108 +21,31 @@ class ProcessWebhookJob extends SpatieProcessWebhookJob
     use ReferenceTrait;
     use TelegramTrait;
 
-     public function handle()
+    public function handle()
     {
-        // $this->webhookCall // contains an instance of `WebhookCall`
+        $reference = data_get($this->webhookCall->payload, 'eventData.transactionReference');
+        if (!is_string($reference) || $reference === '') {
+            return;
+        }
+        $response = app(\App\Services\MonnifyTransactions::class)->verify($reference);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($response, $reference) {
+            $user = User::where('email', $response['customer']['email'] ?? '')->lockForUpdate()->first();
+            if (!$user) {
+                return;
+            }
+            if (Order::where('ref', $reference)->orWhere('monnify_reference', $reference)->lockForUpdate()->exists()) {
+                return;
+            }
+            $this->processVerifiedPayment($response);
+        }, 3);
+    }
 
-        // perform the work here
-
-        $payload = $this->webhookCall->payload;
-
-        $response = $payload['eventData'];
-        //$response = $payload;
-        
-        $transactionReference = $response['transactionReference'];
-        
-        $new_response = $this->VerifyMonnify($transactionReference);
-        
-        \Log::info("Monnify Verification Response");
-        \Log::info($new_response);
-        
-        $response = $new_response['responseBody'];
-        
-        
-        if($new_response['requestSuccessful'] == true && $new_response['responseCode'] == '0' && $response['paymentStatus'] == 'PAID') {
-            
-
+    private function processVerifiedPayment(array $response)
+    {
+        if ($response['paymentStatus'] === 'PAID') {
             switch ($response['product']['type']) {
                 case "RESERVED_ACCOUNT":
-                    $findUser = User::where('email', $response['customer']['email'])->first();
-
-                    if (!is_null($findUser)) {
-                    
-                        $findOrder = Order::where('ref', $response['transactionReference'])->first();
-                    
-                        if (is_null($findOrder)) {
-                    
-                            $blockedEmails = [
-                                'salihusanusi853@gmail.com',
-                                'polmimusa9@gmail.com',
-                                'adamshauwa744@gmail.com',
-                                'davetech261@gmail.com',
-                                'preciousadeola42@gmail.com',
-                                'mojeedbolaji340@gmail.com',
-                                'musamuhammad9215@gmail.com',
-                                'rayyanumuazu5@gmail.com', 
-                                'jonathanazubike90@gmail.com',
-                            ];
-                    
-                            $amt = (float) $response['settlementAmount'];
-                            $grossAmount = (float) ($response['amountPaid'] ?? $response['amount'] ?? $amt);
-                            $charge = max(0, round($grossAmount - $amt, 2));
-                    
-                            $subcategory = Subcategory::where('title', 'Monnify')->first();
-                    
-                            $ref = $response['transactionReference'];
-                    
-                            $order = new Order();
-                            $order->ref = $ref;
-                            $order->monnify_reference = $ref;
-                            $order->user_id = $findUser->id;
-                            $order->subcategory_id = $subcategory->id;
-                            $order->plan = $subcategory->title;
-                            $order->amount = $amt;
-                            $order->quantity = 1;
-                            $order->prev_bal = $findUser->wallet;
-                            $order->subtotal = $amt;
-                            $order->total = $amt;
-                    
-                            if (in_array(strtolower($findUser->email), array_map('strtolower', $blockedEmails))) {
-                                // Block crediting wallet
-                                $order->bal = $findUser->wallet; // wallet unchanged
-                                $order->description = $subcategory->title . " RA: Auto Credited";
-                                $order->status = 2; // blocked status code
-                            } else {
-                                // Normal crediting
-                                if ($this->isCredited($amt, $findUser->id)) {
-                                    $order->bal = $findUser->wallet + $amt;
-                                    $order->description = $subcategory->title . " RA: Auto Credited";
-                                    $order->response = sprintf(
-                                        'Monnify deposit of N%s confirmed. Charge: N%s. Wallet credited: N%s.',
-                                        number_format($grossAmount, 2, '.', ''),
-                                        number_format($charge, 2, '.', ''),
-                                        number_format($amt, 2, '.', '')
-                                    );
-                                    $order->status = 1;
-                                } else {
-                                    // Optional: handle credit failure here
-                                    $order->bal = $findUser->wallet;
-                                    $order->description = $subcategory->title . " RA: Auto Credited";
-                                    $order->status = 3; // credit failed
-                                }
-                            }
-                    
-                            $order->save();
-                            if ((int) $order->status === 1) {
-                                app(FundingRecoveryService::class)->apply(
-                                    $order,
-                                    'Monnify',
-                                    $grossAmount,
-                                    $charge
-                                );
-                            }
-                        }
-                    }
+                    app(\App\Services\MonnifyFunding::class)->credit($response);
 
                     break;
                 case "WEB_SDK":
@@ -1296,6 +1218,7 @@ class ProcessWebhookJob extends SpatieProcessWebhookJob
                             
                             $order = new Order();
                             $order->ref = $ref;
+                            $order->monnify_reference = $ref;
                             $order->user_id = $findUser->id;
                             $order->subcategory_id = $subcategory->id;
                             $order->plan = $subcategory->title;
@@ -2489,6 +2412,7 @@ class ProcessWebhookJob extends SpatieProcessWebhookJob
                             
                                 $order = new Order();
                                 $order->ref = $ref;
+                            $order->monnify_reference = $ref;
                                 $order->user_id = $findUser->id;
                                 $order->subcategory_id = $subcategory->id;
                                 $order->plan = $subcategory->title;
@@ -3682,6 +3606,7 @@ class ProcessWebhookJob extends SpatieProcessWebhookJob
                             
                                 $order = new Order();
                                 $order->ref = $ref;
+                            $order->monnify_reference = $ref;
                                 $order->user_id = $findUser->id;
                                 $order->subcategory_id = $subcategory->id;
                                 $order->plan = $subcategory->title;

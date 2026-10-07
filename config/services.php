@@ -14,6 +14,13 @@ return [
     |
     */
 
+    'autosync_sms' => [
+        'base_url' => env('AUTOSYNC_SMS_BASE_URL', env('autoSyncUrl', 'https://autosyncng.com/api/v1')),
+        'api_token' => env('AUTOSYNC_SMS_API_TOKEN', env('autoSyncToken')),
+        'pin' => env('AUTOSYNC_SMS_PIN'),
+        'webhook_url' => env('AUTOSYNC_SMS_WEBHOOK_URL', rtrim(env('APP_URL', 'https://swiftlinkng.com'), '/') . '/autosync-webhook'),
+    ],
+
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),
         'secret' => env('MAILGUN_SECRET'),

@@ -31,6 +31,11 @@
       <strong>Airtime 2 Cash</strong></span>
     </a>
 
+
+
+    <a href="/dashboard/betting" class="swift-quick-tile swift-service-cash"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-futbol"></i></span><strong>Betting</strong></span></a>
+    <a href="/dashboard/esim" class="swift-quick-tile swift-service-data"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-globe-africa"></i></span><strong>eSIM</strong></span></a>
+
     <button type="button" class="swift-quick-tile swift-service-more" aria-haspopup="dialog" @click="moreOpen = true">
       <span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-ellipsis-h"></i></span><strong>More</strong></span>
     </button>

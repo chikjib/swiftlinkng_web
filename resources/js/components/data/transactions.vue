@@ -16,7 +16,7 @@
           </router-link>
         </div>
         <div class="col-md-9 mb-2">
-          <form @submit.prevent="getResults" class="form-inline">
+          <form @submit.prevent="getResults(1)" class="form-inline">
             <div class="col-md-2">
               <select class="form-control" v-model="field">
                 <option value="">Search By</option>

@@ -1,3 +1,6 @@
+import BettingWallet from './components/services/Betting.vue';
+import TravelEsim from './components/services/TravelEsim.vue';
+import ServiceAdmin from './components/services/ServiceAdmin.vue';
 import Auth from "./Auth.js";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -67,6 +70,7 @@ import bucket_sales_analysis from "./components/data/bucket_sales_analysis.vue";
 import user_bucket_sales_analysis from "./components/data/user_bucket_sales_analysis.vue";
 import admin_user_bucket_sales_analysis from "./components/data/admin_user_bucket_sales_analysis.vue";
 
+import MonnifyRepush from "./components/data/MonnifyRepush.vue";
 import repush from "./components/data/Repush.vue";
 import referralDashboard from "./components/referrals/ReferralDashboard.vue";
 import referralAdmin from "./components/referrals/ReferralAdmin.vue";
@@ -120,6 +124,9 @@ const routes = [
         path: "",
         component: dashboardLayout,
         children: [
+            {path:'/dashboard/betting',name:'betting',component:BettingWallet,meta:{requiresAuth:true,title:'Fund Betting Wallet'}},
+            {path:'/dashboard/esim',name:'esim',component:TravelEsim,meta:{requiresAuth:true,title:'Travel eSIM'}},
+            {path:'/dashboard/service-admin',name:'service-admin',component:ServiceAdmin,meta:{requiresAdmin:true,title:'Betting & Travel eSIM Admin'}},
             {
                 path: "/dashboard",
                 name: "dashboard",
@@ -694,6 +701,12 @@ const routes = [
                 },
             },
 
+            {
+                path: "/dashboard/monnify_repush",
+                name: "monnify-repush",
+                component: MonnifyRepush,
+                meta: { requiresAdmin: true, title: "Monnify Repush" },
+            },
             {
                 path: "/dashboard/prov_repush",
                 name: "repush",

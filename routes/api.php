@@ -219,6 +219,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('fetch/ringobouquet', [App\Http\Controllers\API\OrderController::class, 'ringoFetchBouquet'])->name('orders/ringoFetchBouquet');
     Route::post('verify/ringo', [App\Http\Controllers\API\OrderController::class, 'ringoVerify'])->name('orders/ringoVerify');
+    Route::post('monnify/repush', App\Http\Controllers\API\MonnifyRepushController::class)->middleware(['admin.only', 'throttle:10,1'])->name('monnify.repush');
     Route::post('providus/repush', [App\Http\Controllers\API\OrderController::class, 'provRepush'])->name('orders/provRepush');
     Route::get('requery/{ref}',[App\Http\Controllers\API\OrderController::class, 'getTransaction'])->name('orders/getTransaction');
     Route::get('requery/a-order/{id}',[App\Http\Controllers\API\OrderController::class, 'requeryAdminTransaction'])->middleware('admin.only')->name('orders/requeryAdminTransaction');
@@ -238,3 +239,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 
 //URL::forceScheme('https');
+
+require __DIR__.'/betting.php';
+
+require __DIR__.'/travel_services.php';

@@ -469,7 +469,11 @@ export default {
         const wema = this.user.wema_reserved_acct != null ? this.user.wema_reserved_acct + "," : "";
         const moniepoint = this.user.moniepoint_reserved_acct !=null ? this.user.moniepoint_reserved_acct + "," : "";
         const palmpay = this.user.palmpay_reserved_acct !=null ? this.user.palmpay_reserved_acct + "," : "";
-        this.reserved_accts = providus + rehoboth + gtbank + wema +moniepoint+palmpay;
+        const opay = this.user.opay_reserved_acct;
+        const opayAccount = opay && opay.accountNumber
+          ? [opay.bankName || "OPay", opay.accountNumber, opay.accountName].filter(Boolean).join(" - ")
+          : "";
+        this.reserved_accts = providus + rehoboth + gtbank + wema +moniepoint+palmpay + opayAccount;
 
       });
   },

@@ -39,6 +39,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\HttpClientException;
 
 use App\Services\BulkSMSService;
+use App\Services\AutoSyncSMSService;
 use App\Services\RewardService;
 
 class OrderController extends BaseController
@@ -135,7 +136,7 @@ class OrderController extends BaseController
         if ($request->has('search_user')) {
             $search = $request->search_user;
             if ($request->has('stats')) {
-                if ($request->has('field') && $request->field != "Search By" && $request->has('status') && $request->status != "Select Status") {  // 3 active variable search
+                if ($request->has('field') && $request->field != "Search By" && $request->filled('status') && $request->status != "Select Status") {  // 3 active variable search
                     $data = Order::with($orderListRelations)
                         ->where('user_id', $user_id)
                         ->where($request->field, 'like', '%' . $search . '%')
@@ -175,7 +176,7 @@ class OrderController extends BaseController
                 //     $products = OrderResource::collection($data);
                 // }
             } else {
-                if ($request->has('field') && $request->field != "Search By" && $request->has('status') && $request->status != "Select Status") {  // 3 active variable search
+                if ($request->has('field') && $request->field != "Search By" && $request->filled('status') && $request->status != "Select Status") {  // 3 active variable search
                     $data = Order::with($orderListRelations)
                         ->where('user_id', $user_id)
                         ->where($request->field, 'like', '%' . $search . '%')
@@ -11885,10 +11886,18 @@ class OrderController extends BaseController
         $rate = $this->getUserLevel($productCollection, $this->user->userlevel);
 
         $numbers_array = explode(",", $phone);
+        if (!is_null($subcategory->description) && $subcategory->description === 'AUTOSYNC') {
+            $numbers_array = AutoSyncSMSService::validate($numbers_array, (string) $message, (string) $senderID);
+            try {
+                AutoSyncSMSService::ensureConfigured();
+            } catch (\RuntimeException $e) {
+                return $this->sendError('SMS service is not configured', 'SMS service is not configured');
+            }
+        }
         $no_of_numbers = count($numbers_array);
 
 
-        $no_of_char = strlen($message);
+        $no_of_char = $subcategory->description === 'AUTOSYNC' ? mb_strlen($message) : strlen($message);
         $message_count = ceil($no_of_char / 160);
 
         $amountActual = $rate * $no_of_numbers * $message_count;
@@ -11921,6 +11930,37 @@ class OrderController extends BaseController
             $order->channel = is_null($request->channel) ? 'Web' : 'App';
 
             $order->save();
+
+            if (!is_null($subcategory->description) && $subcategory->description === 'AUTOSYNC') {
+                try {
+                    $response = AutoSyncSMSService::sendBulkSMS($numbers_array, $message, $senderID, $ref);
+                } catch (\Throwable $e) {
+                    // Connection errors may occur after the provider accepted the SMS.
+                    return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                }
+
+                if ($response['status'] === 'successful') {
+                    // Only finish a pending order; a webhook may have already settled it.
+                    $friendlyMessage = BulkSMSService::friendlyResponse([
+                        'total' => $no_of_numbers, 'successful' => $no_of_numbers, 'failed' => 0,
+                    ]);
+                    Order::where('id', $order->id)->where('status', 0)->update([
+                        'status' => 1, 'response' => $friendlyMessage,
+                    ]);
+                    return $this->sendResponse2($ref, $custom_reference, $amountActual, $friendlyMessage, $friendlyMessage);
+                }
+
+                if ($response['status'] === 'failed') {
+                    $friendlyMessage = "We couldn't send your SMS. Your wallet has been refunded.";
+                    $this->refundUser($ref, $friendlyMessage, $amountActual, [
+                        'bal' => $prev, 'prev_bal' => $bal,
+                    ]);
+                    Order::where('id', $order->id)->update(['response' => $friendlyMessage]);
+                    return $this->sendError2($ref, $custom_reference, $friendlyMessage, $friendlyMessage);
+                }
+
+                return $this->sendError2($ref, $custom_reference, 'Transaction pending', 'Transaction pending');
+            }
 
             if (!is_null($subcategory->description) && $subcategory->description == "SMARTSMS") {
 

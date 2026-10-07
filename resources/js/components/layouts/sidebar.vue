@@ -114,6 +114,7 @@
         <span class="menu-title">SMS</span>
       </a>
     </li>
+    <li class="nav-item"><a href="/dashboard/betting" class="nav-link"><i class="fas fa-fw fa-futbol"></i><span class="menu-title">Betting</span></a></li>
 
     <hr class="sidebar-divider" />
     <li class="nav-item" :class="{ active: isBulkDataRoute }">
@@ -160,6 +161,9 @@
 
 
     <hr class="sidebar-divider" />
+    <div class="sidebar-heading">Travels</div>
+    <li class="nav-item"><a href="/dashboard/esim" class="nav-link"><i class="fas fa-fw fa-globe-africa"></i><span class="menu-title">Travel eSIM</span></a></li>
+    <hr class="sidebar-divider">
     <div class="sidebar-heading">Account & Rewards</div>
     <li class="nav-item">
       <a href="/dashboard/profile" class="nav-link">
@@ -220,6 +224,13 @@
     <div v-if="this.auth.user.role == 1">
       <hr class="sidebar-divider" />
       <div class="sidebar-heading">Admin</div>
+
+      <li class="nav-item">
+        <a href="/dashboard/service-admin" class="nav-link">
+          <i class="fas fa-fw fa-sliders-h"></i>
+          <span class="menu-title">Betting &amp; eSIM Admin</span>
+        </a>
+      </li>
 
       <li class="nav-item">
         <a href="/dashboard/admin/referrals" class="nav-link">
@@ -334,6 +345,13 @@
           <i class="fas fa-fw fa-th"></i>
 
           <span class="menu-title">Slides</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a href="/dashboard/monnify_repush" class="nav-link">
+          <i class="fas fa-fw fa-redo"></i>
+          <span class="menu-title">Monnify Repush</span>
         </a>
       </li>
 

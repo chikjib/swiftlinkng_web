@@ -29,7 +29,7 @@ class DeletePendingTransactionsCron extends Command
      */
     public function handle()
     {
-        Order::where('updated_at', '<', Carbon::now()->subDays(30))->where('status', 0)->delete();
+        Order::where('updated_at', '<', Carbon::now()->subDays(30))->where('status', 0)->where('ref', 'not like', 'SLB%')->where('ref', 'not like', 'SLE%')->delete();
         //return 0;
     }
 }

@@ -7,6 +7,45 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## AutoSync bulk SMS
+
+To enable AutoSync for the existing SMS purchase endpoint, set the `BULKSMS`
+subcategory's **description** (provider) to `AUTOSYNC` in the admin category
+editor. Keep its existing products/rates configured; pricing is per recipient
+per 160-character segment. `SMARTSMS` and `BULKSMSNG` remain available.
+
+Configure the server environment:
+
+```dotenv
+AUTOSYNC_SMS_BASE_URL=https://autosyncng.com/api/v1
+AUTOSYNC_SMS_API_TOKEN=your-api-token
+AUTOSYNC_SMS_PIN=your-four-digit-transaction-pin
+AUTOSYNC_SMS_WEBHOOK_URL=https://swiftlinkng.com/autosync-webhook
+```
+
+The token and base URL fall back to `autoSyncToken` and `autoSyncUrl` if the
+SMS-specific variables are absent. The webhook URL defaults to
+`APP_URL/autosync-webhook`. Use an AutoSync-approved sender ID. After changing
+configuration, rebuild Laravel's configuration cache (`php artisan config:cache`).
+
+Requests support 1–1000 Nigerian numbers, a message up to 1000 characters and
+a sender ID up to 20 characters. Validation runs before wallet debit. Each
+bulk request uses the order reference as AutoSync's `request_ref` idempotency
+key. Confirmed failures use the existing wallet refund flow; pending, timeout,
+server-error and unrecognized responses remain pending. The existing
+`AutoSyncWebhookJob` handles final successful/failed callbacks; ensure the
+webhook is reachable and the queue worker is running. If no callback arrives,
+reconcile the pending order with AutoSync before refunding or resending.
+
+Provider documentation: [SMS options](https://autosyncng.com/user/developer/docs?path=v1%2Fsms%2Fget.json),
+[send SMS](https://autosyncng.com/user/developer/docs?path=v1%2Fsms%2Fpost.json),
+[authentication](https://autosyncng.com/user/developer/docs?path=v1%2Fmisc%2Fauth.json).
+
+Run the HTTP-faked integration tests with
+`php vendor/bin/phpunit tests/Feature/AutoSyncSMSServiceTest.php`.
+The application's test bootstrap requires its configured database; these tests
+do not send live SMS.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
