@@ -173,6 +173,17 @@ export default {
   border-radius: 8px;
 }
 
+@media (prefers-color-scheme: dark) {
+  /* These panels retain light backgrounds, so override the global card text. */
+  .disclaimer-card .notice-box,
+  .disclaimer-card .notice-box h5,
+  .disclaimer-card .notice-box p,
+  .disclaimer-card .alert-light,
+  .disclaimer-card .alert-light p {
+    color: #000 !important;
+  }
+}
+
 @media (max-width: 768px) {
   .card-body {
     padding: 20px;

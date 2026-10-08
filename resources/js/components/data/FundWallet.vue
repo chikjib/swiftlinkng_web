@@ -55,7 +55,7 @@
 </template>
 
 <script>
-const token = window.localStorage.getItem("token");
+import axios from "axios";
 export default {
   data() { return { home: {}, activeMethod: "", form: { amount: "" }, oneTimeAmount: "", temporaryAccount: null, loading: false, creatingBank: "", errorflag: "" }; },
   computed: {
@@ -76,16 +76,29 @@ export default {
   },
   mounted() { this.loadHome(); },
   methods: {
-    headers() { return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }; },
+    headers() { return { Authorization: `Bearer ${window.localStorage.getItem("token")}`, "Content-Type": "application/json" }; },
     loadHome() { axios.get("/api/load-home", { headers: this.headers() }).then(({ data }) => { this.home = data.data || {}; }).catch(() => { this.errorflag = "Unable to load your funding accounts."; }); },
-    makePayment() {
-      this.loading = true; this.errorflag = "";
-      axios.post("/api/generate-payment-link", this.form, { headers: this.headers() }).then(({ data }) => {
-        const payload = data.data || {}; const body = payload.responseBody || payload.data || payload; const url = body.checkoutUrl || body.paymentUrl;
-        if (!url) throw new Error("Payment provider did not return a checkout link.");
+    async makePayment() {
+      if (this.loading) return;
+      this.errorflag = "";
+      const amount = Number(this.form.amount);
+      if (!Number.isFinite(amount) || amount < 100) {
+        this.errorflag = "Enter an amount of at least ₦100.";
+        return;
+      }
+      this.loading = true;
+      try {
+        const { data } = await axios.post("/api/generate-payment-link", { amount }, { headers: this.headers() });
+        const payload = data.data || {};
+        const body = payload.responseBody || payload.data || payload;
+        const url = body.checkoutUrl || body.paymentUrl;
+        if (payload.requestSuccessful === false) throw new Error(payload.responseMessage || "Payment initialization failed.");
+        if (!url || new URL(url).protocol !== "https:") throw new Error("Payment provider did not return a secure checkout link.");
         if (body.transactionReference) localStorage.setItem("transactionReference", body.transactionReference);
         window.location.assign(url);
-      }).catch((error) => { this.errorflag = error.response?.data?.message || error.message || "Payment initialization failed."; }).finally(() => { this.loading = false; });
+      } catch (error) {
+        this.errorflag = error.response?.data?.message || error.message || "Payment initialization failed.";
+      } finally { this.loading = false; }
     },
     generateOneTimeAccount() {
       this.loading = true; this.errorflag = "";

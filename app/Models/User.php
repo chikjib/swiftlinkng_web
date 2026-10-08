@@ -409,7 +409,8 @@ class User extends Authenticatable
             'Content-Type' => 'application/json',
 
         ])
-            ->post(config('app.monnifyBaseUrl') . '/api/v1/merchant/transactions/init-transaction', [
+            ->connectTimeout(10)->timeout(30)
+            ->post(rtrim(config('app.monnifyBaseUrl'), '/') . '/api/v1/merchant/transactions/init-transaction', [
                 "amount" => $amount,
                 "customerName" => $customer_name,
                 "customerEmail" => $customer_email,
@@ -445,13 +446,15 @@ class User extends Authenticatable
     }
 
 
-    public function VerifyMonnify($transaction_reference)
+    public function VerifyMonnify($transaction_reference, $reference_type = 'transactionReference')
     {
         $token = $this->monnifyLoginToken();
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $token,
 
-        ])->get("https://api.monnify.com/api/v2/transactions/$transaction_reference");
+        ])->timeout(30)->get(rtrim(config('app.monnifyBaseUrl'), '/') . '/api/v2/merchant/transactions/query', [
+            $reference_type => $transaction_reference,
+        ]);
         return $response->json();
     }
     
@@ -470,28 +473,15 @@ class User extends Authenticatable
 
     public function monnifyLoginToken()
     {
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => config('app.monnifyBaseUrl') . '/api/v1/auth/login/',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_HTTPHEADER => [
-                "Content-Type: application/json",
-                "Authorization: Basic " . base64_encode(config('app.monnifyAPIKey') . ":" . config('app.monnifySecretKey')),
-            ],
-        ));
-        curl_close($curl);
-        $response = curl_exec($curl);
-
-        $result = json_decode($response);
-        return $result->responseBody->accessToken;
+        $result = Http::withBasicAuth(config('app.monnifyAPIKey'), config('app.monnifySecretKey'))
+            ->acceptJson()->connectTimeout(10)->timeout(30)
+            ->post(rtrim(config('app.monnifyBaseUrl'), '/') . '/api/v1/auth/login')
+            ->throw()->json();
+        $token = data_get($result, 'responseBody.accessToken');
+        if (($result['requestSuccessful'] ?? false) !== true || !is_string($token) || $token === '') {
+            throw new \RuntimeException('Payment provider authentication failed.');
+        }
+        return $token;
     }
 
     public  function hasReservedAccount()

@@ -53,7 +53,8 @@ class EsimPurchases {
             $existing = DB::table('esim_purchases')->where('quote_id',$quoteId)->first();
             if ($existing) return $existing;
             abort_if(now()->greaterThan($quote->expires_at),422,'This quote expired. Please choose the plan again.');
-            abort_if(DB::table('esim_purchases')->where('user_id',$userId)->whereIn('status',['pending','processing'])->exists(),409,'An eSIM payment is pending. Check it before purchasing again.');
+            // Separate purchases may proceed; the locked wallet and unique quote/reference
+            // keep each individual payment idempotent and prevent overspending.
             if ((int) round((float) $user->wallet * 100) < $quote->amount_kobo) throw ValidationException::withMessages(['amount'=>'Insufficient wallet balance.']);
             abort_unless($settings->esim_subcategory_id,503,'Travel eSIM is being configured.');
             $amount = number_format($quote->amount_kobo / 100,2,'.',''); $before=$user->wallet;

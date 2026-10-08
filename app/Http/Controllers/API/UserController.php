@@ -1898,25 +1898,25 @@ $user = auth()->user();
      
     public function initializeAtmPayment(Request $request)
     {
-        $customer_name = $this->user->first_name ." ". $this->user->last_name;
-        $customer_email = $this->user->email;
-        $paymentReference = $this->referenceCode();
-        $amount =  $request->amount;
-        $customer_reference = $this->vtPassreferenceCode();
-
-        $payment_gateway = "monnify";
-        $response = [];
-
-        if($payment_gateway == "monnify"){
-            $response = $this->user->initializeMonnifyPayment($customer_name,$customer_email,$paymentReference,$amount);
-        }else{
-            $response = $this->user->initializeBudPayPayment($amount,$customer_email,$customer_reference);
+        $validated = $request->validate(['amount' => ['required', 'numeric', 'min:100']]);
+        try {
+            $response = $this->user->initializeMonnifyPayment(
+                trim($this->user->first_name . ' ' . $this->user->last_name),
+                $this->user->email,
+                $this->referenceCode(),
+                round((float) $validated['amount'], 2)
+            );
+            $checkoutUrl = data_get($response, 'responseBody.checkoutUrl');
+            if (($response['requestSuccessful'] ?? false) !== true || !is_string($checkoutUrl)
+                || !filter_var($checkoutUrl, FILTER_VALIDATE_URL) || parse_url($checkoutUrl, PHP_URL_SCHEME) !== 'https') {
+                return $this->sendError($response['responseMessage'] ?? 'Payment provider did not return a checkout link. Please try again.', [], 502);
+            }
+            return $this->sendResponse($response, 'Payment initialized successfully.');
+        } catch (\Throwable $e) {
+            return $this->sendError('Unable to open secure checkout. Please try again.', [], 502);
         }
-
-        return $this->sendResponse($response, "intialization successful");
-
     }
-    
+
     public function initializePalmpayAtm(Request $request)
     {
         $customerReference = $this->referenceCode();
@@ -2030,10 +2030,11 @@ $user = auth()->user();
     //     return $this->sendResponse($response, "verification retrieved");
     // }
     
-    public function VerifyPayment($transaction_reference){
+    public function VerifyPayment(Request $request, $transaction_reference){
         $gateway = "monnify";
         if ($gateway == "monnify"){
-            $response = $this->user->VerifyMonnify($transaction_reference);
+            $validated = $request->validate(['reference_type' => 'sometimes|in:transactionReference,paymentReference']);
+            $response = $this->user->VerifyMonnify($transaction_reference, $validated['reference_type'] ?? 'transactionReference');
         }else{
             $response = $this->user->VerifyBudpay($transaction_reference);
         }
