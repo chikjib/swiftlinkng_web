@@ -36,3 +36,8 @@
 .esim-saved-payments{margin:0 0 18px;padding:15px;border:1px solid var(--esim-border);border-radius:15px;background:var(--esim-surface)}.esim-saved-payments summary{cursor:pointer;font-weight:700}.esim-saved-payments p,.esim-saved-payment small{font-size:.9rem;color:var(--swift-muted,#667085)}.esim-saved-payment{display:flex;align-items:center;gap:14px;justify-content:space-between;padding:10px 0;border-top:1px solid var(--esim-border)}.esim-saved-payment>span{min-width:0;overflow-wrap:anywhere}.esim-saved-payment small{display:block}.esim-saved-payment .esim-outline{width:auto;flex-shrink:0}
 
 .esim-app .esim-plan-label small{font-size:.875rem}
+
+/* Keep the plan action available while scrolling through the bottom sheet. */
+.esim-sheet .esim-plans{display:flex;flex-direction:column;gap:10px}
+.esim-sheet .esim-plan{margin:0;flex-shrink:0}
+.esim-plan-actions{position:sticky;bottom:-24px;background:var(--esim-surface);padding:12px 0 max(24px,env(safe-area-inset-bottom));margin-bottom:calc(-1 * max(24px,env(safe-area-inset-bottom)))}
