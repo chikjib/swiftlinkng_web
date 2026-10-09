@@ -41,3 +41,6 @@
 .esim-sheet .esim-plans{display:flex;flex-direction:column;gap:10px}
 .esim-sheet .esim-plan{margin:0;flex-shrink:0}
 .esim-plan-actions{position:sticky;bottom:-24px;background:var(--esim-surface);padding:12px 0 max(24px,env(safe-area-inset-bottom));margin-bottom:calc(-1 * max(24px,env(safe-area-inset-bottom)))}
+
+/* Keep the empty-state text and surface paired in both themes. */
+.esim-app .esim-notice.esim-empty-state{background:var(--esim-surface);color:var(--esim-ink);border:1px solid var(--esim-border)}

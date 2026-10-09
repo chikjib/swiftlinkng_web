@@ -2,6 +2,9 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Client\ConnectionException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Validation\ValidationException;
 
 class PayVesselBetting
@@ -9,19 +12,54 @@ class PayVesselBetting
     public function request(string $method, string $path, array $body = []): array
     {
         abort_unless(config('betting.api_key') && config('betting.api_secret'), 503, 'Betting is temporarily unavailable.');
+        try {
         $response = Http::acceptJson()->withHeaders([
             'api-key' => config('betting.api_key'),
             'api-secret' => config('betting.api_secret'),
         ])->connectTimeout(10)->timeout(35)->send($method,
             rtrim(config('betting.base_url'), '/').'/vaas/api/v1/biller-reseller/'.$path,
             $method === 'GET' ? [] : ['json' => $body]);
+        } catch (ConnectionException $e) {
+            Log::warning('PayVessel request failed', ['operation' => $this->operation($path), 'reason' => 'connection_failure']);
+            throw new HttpException(503, 'Unable to reach the betting provider. Please try again shortly.');
+        }
         // Never retry order creation: a timeout may still have charged the provider wallet.
         if (!$response->successful() || $response->json('status') !== true) {
-            throw new \RuntimeException('PayVessel could not confirm this request.');
+            $httpStatus = $response->status();
+            $payload = $response->json();
+            $status = is_array($payload) ? ($payload['status'] ?? null) : null;
+            // Only log response metadata. Never log credentials, bodies or account IDs.
+            Log::warning('PayVessel request rejected', [
+                'operation' => $this->operation($path),
+                'http_status' => $httpStatus,
+                'response_format' => is_array($payload) ? 'json' : 'non_json',
+                'provider_status' => is_bool($status) ? $status : gettype($status),
+            ]);
+            if (in_array($httpStatus, [401, 403], true)) {
+                throw new HttpException(503, 'The betting provider could not authorize this request. Please contact Swiftlink support.');
+            }
+            if ($httpStatus === 429) {
+                throw new HttpException(503, 'The betting provider is busy. Please wait a moment and try again.');
+            }
+            if ($path === 'validate-account' && in_array($httpStatus, [200, 400, 422], true) && is_array($payload) && $status === false) {
+                throw ValidationException::withMessages(['recharge_account' => 'The provider could not verify these details. Check the selected betting platform and account ID, or contact support if they are correct.']);
+            }
+            throw new HttpException(502, 'The betting provider could not confirm this request. Please try again shortly or contact Swiftlink support.');
         }
         $data = $response->json('data');
-        if (!is_array($data)) throw new \RuntimeException('Invalid PayVessel response.');
+        if (!is_array($data)) {
+            Log::warning('PayVessel invalid response', ['operation' => $this->operation($path), 'http_status' => $response->status()]);
+            throw new HttpException(502, 'The betting provider returned an unexpected response. Please contact Swiftlink support.');
+        }
         return $data;
+    }
+
+    private function operation(string $path): string
+    {
+        if ($path === 'validate-account') return 'validate-account';
+        if ($path === 'orders') return 'create-order';
+        if (str_starts_with($path, 'orders/verify/')) return 'verify-order';
+        return $path === 'billers' ? 'billers' : 'biller-items';
     }
 
     public function billers(): array

@@ -4,9 +4,11 @@
     <div v-if="successflag" class="alert alert-success swift-alert">{{ successflag }}</div><div v-if="errorflag" class="alert alert-danger swift-alert">{{ errorflag }}</div>
     <form class="swift-form-stack" @submit.prevent="sendsms">
       <div class="swift-form-group"><label for="sender-id">Sender ID</label><div class="swift-field-wrap"><i class="fas fa-signature"></i><input id="sender-id" v-model="form.senderID" maxlength="13" required class="form-control" placeholder="Your sender name" /></div></div>
-      <div class="swift-form-group"><label for="sms-numbers">Recipients</label><textarea id="sms-numbers" v-model="form.phone" required class="form-control" rows="4" placeholder="Enter phone numbers separated by commas"></textarea></div>
+      <div class="swift-form-group"><label for="sms-numbers">Recipients</label><textarea id="sms-numbers" v-model="form.phone" required class="form-control" rows="4" placeholder="Enter phone numbers separated by commas, e.g. 08123456789,08140003288"></textarea></div>
       <div class="swift-form-group"><label for="sms-message">Message</label><textarea id="sms-message" v-model="message" required class="form-control" rows="5" placeholder="Type your message"></textarea><div class="d-flex justify-content-between mt-2"><span>Page {{ page }}</span><strong>{{ message.length }} / {{ page * 160 }}</strong></div></div>
-      <section class="swift-service-card swift-price-note"><span>SMS rate</span><strong>₦{{ form.amount || 0 }} / page</strong></section>
+      <section class="swift-service-card swift-price-note"><span>Estimated total</span><strong>₦{{ totalCost.toFixed(2) }}</strong></section>
+      <p>{{ recipientCount }} recipient(s) × {{ page }} page(s) × ₦{{ Number(form.amount || 0).toFixed(2) }} per recipient per page</p>
+      <p>Bulk SMS only delivers from 8am to 8pm.</p>
       <button class="swift-primary-action" type="submit" :disabled="isloading">{{ isloading ? 'Sending…' : 'Send SMS' }}</button>
     </form>
   </main>
@@ -44,14 +46,22 @@ export default {
     this.loadplan();
   },
 
+  computed: {
+    recipients() { return String(this.form.phone || '').split(',').map(n => n.trim()).filter(Boolean); },
+    recipientCount() { return this.recipients.length; },
+    totalCost() { return Math.round(Number(this.form.amount || 0) * 100) * this.recipientCount * this.page / 100; },
+  },
+
   watch: {
     message(after, before) {
-      this.page = Math.ceil(this.message.length / 160);
+      this.page = Math.max(1, Math.ceil(this.message.length / 160));
     },
   },
 
   methods: {
     sendsms() {
+      this.form.phone = this.recipients.join(',');
+      if (!this.recipientCount) { this.errorflag = 'Enter at least one recipient.'; return; }
       this.form.message = this.message;
       this.isloading = !this.isloading;
 
