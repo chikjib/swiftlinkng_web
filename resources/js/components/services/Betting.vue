@@ -1,21 +1,20 @@
 <template>
   <main class="sl-service">
     <header class="sl-header"><div><h1>Fund Betting Wallet</h1><p>Verify your account and fund it securely.</p></div><i class="fas fa-futbol fa-2x" aria-hidden="true"></i></header>
-    <p v-if="error" class="sl-alert" role="alert">{{ error }}</p>
     <p v-if="loading" role="status">Loading betting services…</p>
     <div class="sl-columns" v-else>
       <section class="sl-card">
         <div v-if="attempt" class="sl-alert"><p>Your last payment needs confirmation. Continue using the same payment reference.</p><button class="sl-btn" :disabled="busy" @click="fund">Continue Last Payment</button></div>
         <template v-if="saved.length"><div class="sl-row sl-between"><h2>Saved Betting Accounts</h2><button class="sl-btn ghost" @click="allSaved=true" :disabled="locked">See All</button></div><div class="sl-row"><button v-for="account in saved.slice(0,3)" :key="account.id" class="sl-btn ghost" :disabled="locked" @click="useSaved(account)">{{ account.biller_name }}<small>{{ mask(account.recharge_account) }}</small></button></div></template>
         <h2 class="mt-4">Select Betting Platform</h2>
-        <div class="sl-platforms"><button v-for="b in billers" :key="b.biller_id" class="sl-platform" :class="{active:biller?.biller_id===b.biller_id}" :aria-pressed="biller?.biller_id===b.biller_id" :disabled="locked" @click="select(b)"><img v-if="safeUrl(b.biller_icon)" :src="b.biller_icon" alt="" @error="$event.target.style.display='none'"><span>{{ b.biller_name }}</span></button></div>
+        <div class="sl-platforms"><button v-for="b in billers" :key="b.biller_id" class="sl-platform" :class="{active:biller?.biller_id===b.biller_id}" :aria-pressed="biller?.biller_id===b.biller_id" :title="b.biller_name" :disabled="locked" @click="select(b)"><img v-if="safeUrl(b.biller_icon)" :src="b.biller_icon" alt="" @error="$event.target.style.display='none'"><span>{{ b.biller_name }}</span></button></div>
         <p v-if="!billers.length" class="sl-muted">Betting is currently unavailable.</p>
         <label v-if="items.length>1" class="sl-field">Funding option<select v-model="itemId" class="sl-input" :disabled="locked" @change="name=''; applyAmount()"><option value="" disabled>Select option</option><option v-for="i in items" :key="i.item_id" :value="i.item_id">{{ i.item_name }}</option></select></label>
         <label for="bet-account" class="sl-field">Betting Account ID / Phone Number</label><div class="sl-row"><input id="bet-account" v-model.trim="account" class="sl-input sl-grow" maxlength="15" :disabled="locked" @input="name=''" placeholder="Enter account ID"><button class="sl-btn" :disabled="locked || !itemId || !account" @click="verify">Verify</button></div>
         <div v-if="name" class="sl-success"><strong>✓ Account Verified</strong><div>Account Name: {{ name }}</div><div>Platform: {{ biller.biller_name }}</div><div>Account ID: {{ account }}</div></div>
         <label class="sl-toggle"><input type="checkbox" v-model="save" :disabled="locked"><span><strong>Save as Self Beneficiary (Optional)</strong><br><small class="sl-muted">Save for faster funding next time.</small></span></label>
         <label for="bet-amount" class="sl-field">Amount to Fund (₦)</label><input id="bet-amount" v-model="amount" type="number" min="1" step="1" class="sl-input" :disabled="locked || item?.is_fixed_amount" placeholder="5000">
-        <button class="sl-btn sl-full mt-4" :disabled="locked || !name || pending" @click="fund">{{ busy ? 'Please wait…' : 'Fund Betting Wallet' }}</button><p v-if="pending" class="sl-muted mt-3">A payment is pending. Check it in Recent Funding.</p>
+        <button class="sl-btn sl-full mt-4" :disabled="locked || !name || pending" @click="fund">{{ busy ? 'Please wait…' : 'Fund Betting Wallet' }}</button><p v-if="error" class="sl-alert mt-3" role="alert">{{ error }}</p><p v-if="pending" class="sl-muted mt-3">A payment is pending. Check it in Recent Funding.</p>
       </section>
       <aside class="sl-card"><h2>Recent Funding</h2><p v-if="!history.length" class="sl-muted">Your betting payments will appear here.</p><button v-for="row in history" :key="row.id" class="sl-btn ghost sl-full mb-3" :disabled="busy" @click="receipt=row"><span>{{ row.biller_name }}<small class="d-block">{{ money(row.amount) }} · {{ row.status }}</small></span><i class="fas fa-chevron-right"></i></button></aside>
     </div>
