@@ -23,6 +23,14 @@ class PayVesselBetting
             Log::warning('PayVessel request failed', ['operation' => $this->operation($path), 'reason' => 'connection_failure']);
             throw new HttpException(503, 'Unable to reach the betting provider. Please try again shortly.');
         }
+        if (in_array($this->operation($path), ['create-order', 'verify-order'], true)) {
+            Log::info('PayVessel order response', [
+                'operation' => $this->operation($path),
+                'reference' => $path === 'orders' ? ($body['reference'] ?? null) : rawurldecode(substr($path, strlen('orders/verify/'))),
+                'http_status' => $response->status(),
+                'response' => $this->logResponse($response->json(), $body),
+            ]);
+        }
         // Never retry order creation: a timeout may still have charged the provider wallet.
         if (!$response->successful() || $response->json('status') !== true) {
             $httpStatus = $response->status();
@@ -52,6 +60,40 @@ class PayVesselBetting
             throw new HttpException(502, 'The betting provider returned an unexpected response. Please contact Swiftlink support.');
         }
         return $data;
+    }
+
+    private function logResponse($payload, array $request): array
+    {
+        if (!is_array($payload)) return ['format' => 'non_json', 'body' => '[omitted]'];
+        $secrets = [config('betting.api_key'), config('betting.api_secret'), $request['recharge_account'] ?? null];
+        $collect = function ($value) use (&$collect, &$secrets) {
+            if (!is_array($value)) return;
+            foreach ($value as $key => $item) {
+                if (preg_match('/account|phone|email|name|secret|token|password|api.?key/i', (string) $key) && is_scalar($item)) $secrets[] = (string) $item;
+                if (is_array($item)) $collect($item);
+            }
+        };
+        $collect($payload);
+        $secrets = array_values(array_filter($secrets, fn ($v) => is_string($v) && $v !== ''));
+        usort($secrets, fn ($a, $b) => strlen($b) <=> strlen($a));
+        $clean = function ($value) use ($secrets) {
+            if (!is_string($value)) return is_scalar($value) || $value === null ? $value : '[omitted]';
+            $value = str_replace($secrets, '[redacted]', $value);
+            $value = preg_replace('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}|\b\d{7,}\b/i', '[redacted]', $value);
+            return mb_substr(preg_replace('/[\r\n\x00-\x1F]/', ' ', $value), 0, 1500);
+        };
+        // Keep provider result and diagnostic messages; omit arbitrary nested customer data.
+        $result = [];
+        foreach (['status', 'message', 'error_message', 'code'] as $key) {
+            if (array_key_exists($key, $payload)) $result[$key] = $clean($payload[$key]);
+        }
+        if (is_array($payload['data'] ?? null)) {
+            $result['data'] = [];
+            foreach (['merchant_reference', 'order_reference', 'biller_id', 'item_id', 'amount', 'status', 'error_message'] as $key) {
+                if (array_key_exists($key, $payload['data'])) $result['data'][$key] = $clean($payload['data'][$key]);
+            }
+        } else $result['data'] = null;
+        return $result;
     }
 
     private function operation(string $path): string
