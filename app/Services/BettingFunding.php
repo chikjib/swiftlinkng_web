@@ -21,10 +21,6 @@ class BettingFunding
             $user = User::whereKey($userId)->lockForUpdate()->firstOrFail();
             $existing = DB::table('betting_fundings')->where('reference', $input['reference'])->first();
             if ($existing) return [$this->matching($existing, $userId, $input), false];
-            // Keep one unresolved debit per customer. Reopening the page cannot charge again.
-            if (DB::table('betting_fundings')->where('user_id', $userId)->whereIn('status', ['pending', 'processing'])->exists()) {
-                throw ValidationException::withMessages(['amount' => 'A betting payment is still pending. Check its status before funding again.']);
-            }
             $amount = (int) $input['amount'];
             if ($user->wallet < $amount) throw ValidationException::withMessages(['amount' => 'Insufficient wallet balance.']);
             $before = $user->wallet;
