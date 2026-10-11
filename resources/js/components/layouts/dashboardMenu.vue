@@ -34,6 +34,7 @@
 
 
     <a href="/dashboard/betting" class="swift-quick-tile swift-service-cash"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-futbol"></i></span><strong>Betting</strong></span></a>
+    <a href="/dashboard/international" class="swift-quick-tile swift-service-data"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-globe"></i></span><strong>International</strong></span></a>
     <a href="/dashboard/esim" class="swift-quick-tile swift-service-data"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-globe-africa"></i></span><strong>eSIM</strong></span></a>
 
     <a href="/dashboard/sms-disclaimer" class="swift-quick-tile swift-service-talkmore"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-comment-dots"></i></span><strong>Bulk SMS</strong></span></a>

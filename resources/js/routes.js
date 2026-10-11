@@ -1,3 +1,5 @@
+import International from './components/services/International.vue';
+import InternationalAdmin from './components/services/InternationalAdmin.vue';
 import BettingWallet from './components/services/Betting.vue';
 import TravelEsim from './components/services/TravelEsim.vue';
 import ServiceAdmin from './components/services/ServiceAdmin.vue';
@@ -124,6 +126,8 @@ const routes = [
         path: "",
         component: dashboardLayout,
         children: [
+            {path:'/dashboard/international',name:'international',component:International,meta:{requiresAuth:true,title:'International'}},
+            {path:'/dashboard/international-admin',name:'international-admin',component:InternationalAdmin,meta:{requiresAdmin:true,title:'International Admin'}},
             {path:'/dashboard/betting',name:'betting',component:BettingWallet,meta:{requiresAuth:true,title:'Fund Betting Wallet'}},
             {path:'/dashboard/esim',name:'esim',component:TravelEsim,meta:{requiresAuth:true,title:'Travel eSIM'}},
             {path:'/dashboard/service-admin',name:'service-admin',component:ServiceAdmin,meta:{requiresAdmin:true,title:'Betting & Travel eSIM Admin'}},

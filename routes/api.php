@@ -178,6 +178,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('purchase/exam', [App\Http\Controllers\API\OrderController::class, 'purchaseExam'])->middleware('transaction.pin')->name('orders/purchaseExam');
     Route::post('fund/withdraw', [App\Http\Controllers\API\OrderController::class, 'withdraw'])->middleware('transaction.pin')->name('orders/withdraw');
 
+    Route::get('sms/recipient-lists', [App\Http\Controllers\API\SmsRecipientListController::class, 'index']);
+    Route::post('sms/recipient-lists', [App\Http\Controllers\API\SmsRecipientListController::class, 'store'])->middleware('throttle:20,1');
+    Route::delete('sms/recipient-lists/{id}', [App\Http\Controllers\API\SmsRecipientListController::class, 'destroy']);
     Route::post('send/sms', [App\Http\Controllers\API\OrderController::class, 'sendSMS'])->middleware('transaction.pin')->name('orders/sendSMS');
     Route::post('initiate-a2cash', [App\Http\Controllers\API\OrderController::class, 'initiateA2cash'])->name('orders/initiateA2cash');
     Route::post('purchase/a2cash', [App\Http\Controllers\API\OrderController::class, 'purchaseA2cash'])->middleware('transaction.pin')->name('orders/purchaseA2cash');
@@ -243,3 +246,5 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 require __DIR__.'/betting.php';
 
 require __DIR__.'/travel_services.php';
+
+require __DIR__.'/international.php';

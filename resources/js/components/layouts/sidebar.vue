@@ -162,6 +162,7 @@
 
     <hr class="sidebar-divider" />
     <div class="sidebar-heading">Travels</div>
+    <li class="nav-item"><a href="/dashboard/international" class="nav-link"><i class="fas fa-fw fa-globe"></i><span class="menu-title">International</span></a></li>
     <li class="nav-item"><a href="/dashboard/esim" class="nav-link"><i class="fas fa-fw fa-globe-africa"></i><span class="menu-title">Travel eSIM</span></a></li>
     <hr class="sidebar-divider">
     <div class="sidebar-heading">Account & Rewards</div>
@@ -225,6 +226,9 @@
       <hr class="sidebar-divider" />
       <div class="sidebar-heading">Admin</div>
 
+      <li class="nav-item">
+        <a href="/dashboard/international-admin" class="nav-link"><i class="fas fa-fw fa-globe"></i><span class="menu-title">International Settings</span></a>
+      </li>
       <li class="nav-item">
         <a href="/dashboard/service-admin" class="nav-link">
           <i class="fas fa-fw fa-sliders-h"></i>

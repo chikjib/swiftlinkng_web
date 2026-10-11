@@ -101,3 +101,13 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## International airtime and data
+
+Run `php artisan migrate --force` during deployment and rebuild the web assets with `npm run build`. International is available at `/dashboard/international` and in the Flutter dashboard. Admins configure `/dashboard/international-admin`: VTUgate API key (stored encrypted; blank keeps the existing key), availability, a shared multiplier (default `1.03`), and country calling-code overrides keyed by two-letter ISO country codes. An optional `VTUGATE_API_KEY` environment variable supplies the fallback credential. No credentials are sent to the clients.
+
+Prices use VTUgate international `fxrate.charged_to_user` in NGN, multiplied and rounded up to the nearest kobo. The selected amount is in the recipient's currency; local fixed denominations and local limits are used, never USD sender denominations. Quotes last two minutes. Before reserving wallet funds, a fresh provider preview must match the confirmed amount. Changed rates require confirmation of a new quote.
+
+Purchases require the existing transaction PIN and reserve the wallet once per quote. VTUgate's documented top-up request does not support a client idempotency reference: ambiguous submissions remain processing and are never automatically resent or refunded. Known provider transaction IDs can be checked in customer history. Unknown outcomes require provider confirmation and an audited admin resolution after five minutes. Include pending international transactions in operational reconciliation.
+
+Verification: `php vendor/bin/phpunit --filter International`; Flutter: `flutter test test/international_test.dart` and targeted `flutter analyze`. No live top-ups were used in verification.

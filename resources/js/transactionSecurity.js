@@ -1,4 +1,5 @@
 const protectedEndpoints = [
+    "/api/international/purchases",
     "/api/betting/fundings",
     "/api/esim/purchases",
     "/api/purchase/airtime",
