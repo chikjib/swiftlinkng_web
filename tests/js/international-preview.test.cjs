@@ -16,6 +16,7 @@ function harness() {
   vm.runInNewContext(script, context);
   const state = context.component.data();
   for (const [key, method] of Object.entries(context.component.methods)) state[key] = method.bind(state);
+  for (const [key, getter] of Object.entries(context.component.computed)) Object.defineProperty(state, key, {get: getter.bind(state)});
   Object.assign(state, {country: 'GH', phone: '0241234567', operator: {id: 7, min: 1, max: 100}, amount: '50'});
   return {state, requests, fire: () => { for (const [id, callback] of timers) {timers.delete(id); callback();} }};
 }
@@ -48,4 +49,14 @@ test('price errors and success flags are positioned below Continue', async () =>
   assert.equal(h.state.message, 'Price unavailable'); assert.equal(h.state.pricePending, false);
   assert.ok(source.indexOf('v-if="message"') > source.indexOf('Continue</button>'));
   assert.ok(source.indexOf('v-if="statusMessage"') > source.indexOf('Continue</button>'));
+});
+
+test('country search matches names, ISO codes and calling prefixes', () => {
+  const {state} = harness();
+  state.countries = [{code:'GH',name:'Ghana',calling_code:'+233'}, {code:'NG',name:'Nigeria',calling_code:'+234'}];
+  state.countrySearch = ' nigeria ';
+  assert.equal(state.filteredCountries.length, 1); assert.equal(state.filteredCountries[0].code, 'NG');
+  state.countrySearch = 'gh'; assert.equal(state.filteredCountries[0].code, 'GH');
+  state.countrySearch = '+234'; assert.equal(state.filteredCountries[0].code, 'NG');
+  state.countrySearch = 'missing country'; assert.equal(state.filteredCountries.length, 0);
 });
