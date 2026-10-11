@@ -3,6 +3,29 @@
 return [
     'configs' => [
         [
+            'name' => 'esim-access-webhook',
+            'signing_secret' => '',
+            'signature_header_name' => 'payvessel-http-signature',
+            'signature_validator' => \App\EsimAccessSignatureValidator::class,
+            'webhook_profile' => \App\Webhooks\EsimAccessProfile::class,
+            'webhook_response' => \Spatie\WebhookClient\WebhookResponse\DefaultRespondsTo::class,
+            'webhook_model' => \App\Webhooks\ProviderWebhookCall::class,
+            'store_headers' => [], 'store_attachments' => false,
+            'process_webhook_job' => \App\Jobs\EsimAccessWebhookJob::class,
+        ],
+        [
+            'name' => 'payvessel-betting-webhook',
+            'signing_secret' => env('PAYVESSEL_WEBHOOK_SECRET', ''),
+            'signature_header_name' => 'payvessel-http-signature',
+            'signature_validator' => \App\PayVesselBettingSignatureValidator::class,
+            'webhook_profile' => \Spatie\WebhookClient\WebhookProfile\ProcessEverythingWebhookProfile::class,
+            'webhook_response' => \Spatie\WebhookClient\WebhookResponse\DefaultRespondsTo::class,
+            'webhook_model' => \App\Webhooks\ProviderWebhookCall::class,
+            'store_headers' => [], 'store_attachments' => false,
+            'process_webhook_job' => \App\Jobs\PayVesselBettingWebhookJob::class,
+        ],
+
+        [
 
             'name' => 'monify-webhook',
             'signing_secret' => env('WEBHOOK_CLIENT_SECRET'),

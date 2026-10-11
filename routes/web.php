@@ -78,6 +78,8 @@ Route::get('/my-cron', [App\Http\Controllers\HomeController::class,'run_cron'])-
 
 Route::get('/airtime-nigeria-requery/{ref}',[App\Http\Controllers\HomeController::class,'airtime_nigeria_requery'])->name('angrequery');
 
+Route::webhooks('esim-access-webhook', 'esim-access-webhook')->middleware('throttle:600,1');
+Route::webhooks('payvessel-betting-webhook', 'payvessel-betting-webhook')->middleware('throttle:300,1');
 Route::webhooks('monify-webhook', 'monify-webhook');
 Route::webhooks('rehoboth-webhook', 'rehoboth-webhook');
 Route::webhooks('rave-webhook', 'rave-webhook');
@@ -242,3 +244,4 @@ Route::get('/mtn-cg-account-active',[App\Http\Controllers\MtnCgController::class
 
 // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 // Route::get('/users', [App\Http\Controllers\HomeController::class, 'users'])->name('users');
+

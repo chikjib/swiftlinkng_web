@@ -30,6 +30,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('betting:reconcile')->everyMinute()->withoutOverlapping();
 
         $schedule->command('esim:reconcile')->everyMinute()->withoutOverlapping();
+        $schedule->command('international:reconcile')->everyMinute()->withoutOverlapping();
 
         $schedule->command('deletependingtransaction:cron')->daily();
 

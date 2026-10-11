@@ -46,8 +46,12 @@ class BettingFunding
         });
         if (!$created) return $funding;
         try {
-            $data = $this->provider->request('POST', 'orders', array_intersect_key($input,
-                array_flip(['biller_id', 'item_id', 'recharge_account', 'amount', 'reference'])));
+            $body = array_intersect_key($input, array_flip(['biller_id', 'item_id', 'recharge_account', 'amount', 'reference']));
+            $webhook = config('betting.webhook_url');
+            if (is_string($webhook) && filter_var($webhook, FILTER_VALIDATE_URL) && parse_url($webhook, PHP_URL_SCHEME) === 'https') {
+                $body['webhook_url'] = $webhook;
+            }
+            $data = $this->provider->request('POST', 'orders', $body);
             return $this->settle($funding, $data);
         } catch (\Throwable $e) {
             // Includes non-2xx and duplicate-reference responses: reconcile, never blindly refund/retry.

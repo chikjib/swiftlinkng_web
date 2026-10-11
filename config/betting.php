@@ -1,5 +1,7 @@
 <?php
 return [
+    'webhook_url' => env('PAYVESSEL_BETTING_WEBHOOK_URL'),
+    'webhook_ips' => array_values(array_filter(array_map('trim', explode(',', env('PAYVESSEL_WEBHOOK_IPS', '3.255.23.38,162.246.254.36'))))),
     'base_url' => env('PAYVESSEL_BASE_URL', 'https://sandbox.payvessel.com'),
     'api_key' => env('PAYVESSEL_API_KEY'),
     'api_secret' => env('PAYVESSEL_API_SECRET'),
