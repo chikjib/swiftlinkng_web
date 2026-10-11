@@ -64,12 +64,45 @@ class InternationalTopup
         $raw = Cache::remember('international-operators-' . $country . '-' . $type, 300, fn() => $this->data('operators', ['country_code' => $country] + ($type === 'data' ? ['type' => 'data'] : [])));
         return array_values(array_filter($raw, fn($o) => $type === 'data' ? !empty($o['data']) || !empty($o['bundle']) : empty($o['data']) && empty($o['bundle'])));
     }
+    private function amountKey($amount): string
+    {
+        $value = trim((string) $amount);
+        if (!preg_match('/^\+?(\d+)(?:\.(\d+))?$/', $value, $match)) {
+            return $value;
+        }
+        $whole = ltrim($match[1], '0') ?: '0';
+        $fraction = rtrim($match[2] ?? '', '0');
+        return $whole . ($fraction === '' ? '' : '.' . $fraction);
+    }
+
+    private function descriptionMap(array $descriptions): array
+    {
+        $names = [];
+        foreach ($descriptions as $amount => $description) {
+            if (!is_string($description)) continue;
+            $name = trim(preg_replace('/\s+/u', ' ', $description) ?? '');
+            if ($name !== '') $names[$this->amountKey($amount)] = $name;
+        }
+        return $names;
+    }
+
     public function catalog(string $country, string $type): array
     {
-        return array_map(function ($o) use ($country) {
+        return array_map(function ($o) use ($country, $type) {
             $plans = [];
-            foreach ($o['localFixedAmounts'] ?? [] as $amount) {
-                $plans[] = ['amount' => $amount, 'name' => $o['localFixedAmountsDescriptions'][(string) $amount] ?? $amount . ' ' . ($o['destinationCurrencyCode'] ?? '')];
+            $localAmounts = array_values($o['localFixedAmounts'] ?? []);
+            $senderAmounts = array_values($o['fixedAmounts'] ?? []);
+            $localNames = $this->descriptionMap($o['localFixedAmountsDescriptions'] ?? []);
+            $senderNames = $this->descriptionMap($o['fixedAmountsDescriptions'] ?? []);
+            foreach ($localAmounts as $index => $amount) {
+                // Provider descriptions may use "50.00" while the amount array contains 50.
+                $name = $localNames[$this->amountKey($amount)] ?? null;
+                // Sender and local denomination arrays describe the same products in order.
+                // Use this correspondence only when both arrays have the same length.
+                if ($name === null && count($senderAmounts) === count($localAmounts)) {
+                    $name = $senderNames[$this->amountKey($senderAmounts[$index])] ?? null;
+                }
+                $plans[] = ['amount' => $amount, 'name' => $name ?? ($type === 'data' ? $o['name'] . ' bundle — ' . $amount . ' ' . ($o['destinationCurrencyCode'] ?? '') : $amount . ' ' . ($o['destinationCurrencyCode'] ?? ''))];
             }
             $logos = array_values(array_filter($o['logoUrls'] ?? [], fn($url) => is_string($url) && str_starts_with($url, 'https://')));
             $logo = collect($logos)->first(fn($url) => preg_match('/\.(png|jpe?g|webp)(\?|$)/i', $url)) ?? ($logos[0] ?? null);

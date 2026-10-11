@@ -77,6 +77,7 @@ abstract class InternationalPurchaseTestCase extends TestCase
 }
 class FakeInternational extends \App\Services\InternationalTopup
 {
+    public ?array $operatorOverrides = null;
     public int $sent = 0;
     public float $cost = 6000;
     public bool $timeout = false;
@@ -87,6 +88,7 @@ class FakeInternational extends \App\Services\InternationalTopup
             return ['status' => true, 'data' => [['isoName' => 'GH', 'name' => 'Ghana', 'callingCodes' => ['+233']]]];
         }
         if ($path === 'operators') {
+            if ($this->operatorOverrides !== null) return ['status' => true, 'data' => $this->operatorOverrides];
             return ['status' => true, 'data' => [['operatorId' => 7, 'logoUrls' => ['https://logos.test/'. $body['country_code'].'/data.svg', 'https://logos.test/'. $body['country_code'].'/data.png'], 'name' => 'Ghana Data', 'data' => true, 'bundle' => false, 'denominationType' => 'FIXED', 'localFixedAmounts' => [50], 'localFixedAmountsDescriptions' => ['50' => '5GB 30 days'], 'destinationCurrencyCode' => 'GHS'], ['operatorId' => 8, 'logoUrls' => ['https://logos.test/'. $body['country_code'].'/airtime.svg'], 'name' => 'Ghana Airtime', 'data' => false, 'bundle' => false, 'denominationType' => 'RANGE', 'localMinAmount' => 1, 'localMaxAmount' => 100, 'destinationCurrencyCode' => 'GHS']]];
         }
         if ($path === 'fxrate') {
@@ -239,6 +241,51 @@ class InternationalTopupTest extends InternationalPurchaseTestCase
         $this->assertSame('https://logos.test/GB/data.png', $this->service->catalog('GB', 'data')[0]['logo']);
         $this->assertSame('https://logos.test/GH/airtime.svg', $this->service->catalog('GH', 'airtime')[0]['logo']);
         $this->assertNull($this->service->catalog('GH', 'data')[0]['fallback_logo']);
+    }
+
+    private function namedCatalog(array $fields): array
+    {
+        $this->service->operatorOverrides = [array_merge(['operatorId'=>7, 'name'=>'Ghana Data', 'data'=>true, 'destinationCurrencyCode'=>'GHS'], $fields)];
+        return $this->service->catalog('GH', 'data')[0]['plans'];
+    }
+
+    public function test_decimal_description_keys_match_integer_and_fractional_local_amounts(): void
+    {
+        $plans = $this->namedCatalog([
+            'localFixedAmounts'=>[3, 5.13, 50],
+            'localFixedAmountsDescriptions'=>['3.00'=>'1GB Plan Mobile Data', '5.1300'=>'625MB Mobile Data', '50.00'=>"5GB 30 days\t"],
+        ]);
+        $this->assertSame(['1GB Plan Mobile Data', '625MB Mobile Data', '5GB 30 days'], array_column($plans, 'name'));
+        $this->assertSame([3, 5.13, 50], array_column($plans, 'amount'));
+    }
+
+    public function test_sender_descriptions_supply_names_without_changing_local_purchase_amounts(): void
+    {
+        $plans = $this->namedCatalog([
+            'localFixedAmounts'=>[1, 50], 'localFixedAmountsDescriptions'=>[],
+            'fixedAmounts'=>[83.2, 4160.2],
+            'fixedAmountsDescriptions'=>['83.20'=>'300MB — 2 days', '4160.20'=>'5GB — 30 days'],
+        ]);
+        $this->assertSame(['300MB — 2 days', '5GB — 30 days'], array_column($plans, 'name'));
+        $this->assertSame([1, 50], array_column($plans, 'amount'));
+    }
+
+    public function test_local_description_takes_precedence_and_ignores_empty_strings(): void
+    {
+        $plans = $this->namedCatalog([
+            'localFixedAmounts'=>[1, 50], 'localFixedAmountsDescriptions'=>['1.00'=>'   ', '50.00'=>'Correct 5GB bundle'],
+            'fixedAmounts'=>[83.2, 4160.2], 'fixedAmountsDescriptions'=>['83.20'=>'300MB daily', '4160.20'=>'Other description'],
+        ]);
+        $this->assertSame(['300MB daily', 'Correct 5GB bundle'], array_column($plans, 'name'));
+    }
+
+    public function test_mismatched_denomination_arrays_do_not_assign_the_wrong_bundle_name(): void
+    {
+        $plans = $this->namedCatalog([
+            'localFixedAmounts'=>[1, 50], 'fixedAmounts'=>[83.2], 'fixedAmountsDescriptions'=>['83.20'=>'Wrong bundle'],
+        ]);
+        $this->assertStringNotContainsString('Wrong bundle', $plans[0]['name']);
+        $this->assertStringNotContainsString('Wrong bundle', $plans[1]['name']);
     }
 
 }
