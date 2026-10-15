@@ -11239,13 +11239,13 @@ class OrderController extends BaseController
                         $updateOrder->description = $purchasedCode ? trim($updateOrder->description . ' ' . $purchasedCode) : $updateOrder->description;
         
                         $updateOrder->save();
-                        $msg = $response['response_description'] . " VTPASS Ref: " . $response['content']['transactions']['transactionId'] . " Showmax Voucher: " . $response['purchased_code'];
+                        $msg = $response['response_description'] . " VTPASS Ref: " . $response['content']['transactions']['transactionId'] . ($purchasedCode ? " Showmax Voucher: " . $purchasedCode : "");
                         
                         $this->processReferralRewards($updateOrder);
                         
                         $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $subcategory->pins, $ref, $subcategory->telegram, $msg);
 
-                        return $this->sendResponse3($ref, $custom_reference, $amountActual, $plan . " Payment successful", $plan . " Payment successful Voucher has been added to the transaction history", $response['purchased_code']);
+                        return $this->sendResponse3($ref, $custom_reference, $amountActual, $plan . " Payment successful", $plan . " Payment successful" . ($purchasedCode ? " Voucher has been added to the transaction history" : ""), $purchasedCode);
                     } else {
                         $statusmsg = $response['content']['transactions']['status'];
                         $updateOrder = Order::where('ref', $ref)->first();
@@ -11255,10 +11255,10 @@ class OrderController extends BaseController
                         $updateOrder->description = $purchasedCode ? trim($updateOrder->description . ' ' . $purchasedCode) : $updateOrder->description;
                         
                         $updateOrder->save();
-                        $msg = $response['response_description'] . " VTPASS Ref: " . $response['content']['transactions']['transactionId'] . " Showmax Voucher: " . $response['purchased_code'];
+                        $msg = $response['response_description'] . " VTPASS Ref: " . $response['content']['transactions']['transactionId'] . ($purchasedCode ? " Showmax Voucher: " . $purchasedCode : "");
 
                         $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $subcategory->pins, $ref, $subcategory->telegram, $msg);
-                        return $this->sendResponse3($ref, $custom_reference, $amountActual, $plan . " Payment successful", $plan . " Payment successful Voucher has been added to the transaction history", $response['purchased_code']);
+                        return $this->sendResponse3($ref, $custom_reference, $amountActual, $plan . " Payment successful", $plan . " Payment successful" . ($purchasedCode ? " Voucher has been added to the transaction history" : ""), $purchasedCode);
 
                         // return $this->sendResponse2($ref,$plan . " Payment $statusmsg", $plan . " Payment $statusmsg and will be completed shortly");
                     }
