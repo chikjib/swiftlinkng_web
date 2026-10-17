@@ -19,9 +19,9 @@ class RecheckInternationalTopupJob implements ShouldQueue {
         if (!$lock->get()) return;
         try {
             $row=DB::table('international_purchases')->where('id',$this->purchaseId)->first();
-            if (!$row || !in_array($row->status,['pending','processing'],true) || !$row->transaction_id) return;
+            if (!$row || !in_array($row->status,['pending','processing'],true) || (!$row->transaction_id && $row->provider !== 'sochitel')) return;
             $result=$service->refresh($row);
-            \Illuminate\Support\Facades\Log::info('VTUGate international status checked',['reference'=>$row->reference,'status'=>$result->status]);
+            \Illuminate\Support\Facades\Log::info('International status checked',['reference'=>$row->reference,'provider'=>$row->provider,'status'=>$result->status]);
         } finally { $lock->release(); }
     }
 }

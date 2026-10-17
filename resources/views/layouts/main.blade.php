@@ -28,7 +28,7 @@
 
     <link
         href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&amp;display=swap"
-        rel="stylesheet">
+        rel="stylesheet" media="print" onload="this.media='all'">
 
     <link rel="stylesheet" href="{{ asset('frontend/vendors/bootstrap/css/bootstrap.min.css') }}" />
     <link rel="stylesheet" href="{{ asset('frontend/vendors/animate/animate.min.css') }}" />
@@ -168,38 +168,38 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 
     <a href="#" data-target="html" class="scroll-to-target scroll-to-top"><i class="fa fa-angle-up"></i></a>
-    <script src="{{ asset('frontend/vendors/jquery/jquery-3.6.0.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jarallax/jarallax.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jquery-ajaxchimp/jquery.ajaxchimp.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jquery-appear/jquery.appear.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jquery-circle-progress/jquery.circle-progress.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jquery-magnific-popup/jquery.magnific-popup.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jquery-validate/jquery.validate.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/nouislider/nouislider.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery/jquery-3.6.0.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jarallax/jarallax.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery-ajaxchimp/jquery.ajaxchimp.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery-appear/jquery.appear.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery-circle-progress/jquery.circle-progress.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery-magnific-popup/jquery.magnific-popup.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery-validate/jquery.validate.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/nouislider/nouislider.min.js') }}"></script>
 
-    <script src="{{ asset('frontend/vendors/odometer/odometer.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/swiper/swiper.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/tiny-slider/tiny-slider.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/wnumb/wNumb.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/wow/wow.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/isotope/isotope.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/countdown/countdown.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/owl-carousel/owl.carousel.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/odometer/odometer.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/swiper/swiper.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/tiny-slider/tiny-slider.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/wnumb/wNumb.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/wow/wow.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/isotope/isotope.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/countdown/countdown.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/owl-carousel/owl.carousel.min.js') }}"></script>
 
-    <script src="{{ asset('frontend/vendors/bxslider/jquery.bxslider.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/bootstrap-select/js/bootstrap-select.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/vegas/vegas.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/jquery-ui/jquery-ui.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/timepicker/timePicker.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/circleType/jquery.circleType.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/circleType/jquery.lettering.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendors/ion.rangeSlider/js/ion.rangeSlider.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/bxslider/jquery.bxslider.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/bootstrap-select/js/bootstrap-select.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/vegas/vegas.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/jquery-ui/jquery-ui.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/timepicker/timePicker.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/circleType/jquery.circleType.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/circleType/jquery.lettering.min.js') }}"></script>
+    <script defer src="{{ asset('frontend/vendors/ion.rangeSlider/js/ion.rangeSlider.min.js') }}"></script>
 
 
 
     <!-- template js -->
-    <script src="{{ asset('frontend/js/insur.js') }}"></script>
+    <script defer src="{{ asset('frontend/js/insur.js') }}"></script>
 </body>
 
 </html>

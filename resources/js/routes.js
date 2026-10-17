@@ -1,86 +1,86 @@
-import International from './components/services/International.vue';
-import InternationalAdmin from './components/services/InternationalAdmin.vue';
-import BettingWallet from './components/services/Betting.vue';
-import TravelEsim from './components/services/TravelEsim.vue';
-import ServiceAdmin from './components/services/ServiceAdmin.vue';
+// Load each screen when it is visited so sign-in does not wait for the dashboard.
+const International = () => import('./components/services/International.vue');
+const InternationalAdmin = () => import('./components/services/InternationalAdmin.vue');
+const BettingWallet = () => import('./components/services/Betting.vue');
+const TravelEsim = () => import('./components/services/TravelEsim.vue');
+const ServiceAdmin = () => import('./components/services/ServiceAdmin.vue');
 import Auth from "./Auth.js";
 import { createRouter, createWebHistory } from "vue-router";
 
 import Login from "./components/login.vue";
-import Register from "./components/register.vue";
-import VerifyEmailNotice from "./components/VerifyEmailNotice.vue";
-import forgotpassword from "./components/forgot.vue";
-import VerifyToken from "./components/verifytoken.vue";
-import Reset from "./components/reset.vue";
+const Register = () => import("./components/register.vue");
+const VerifyEmailNotice = () => import("./components/VerifyEmailNotice.vue");
+const forgotpassword = () => import("./components/forgot.vue");
+const VerifyToken = () => import("./components/verifytoken.vue");
+const Reset = () => import("./components/reset.vue");
 
-import Dashboard from "./components/dashboard.vue";
-import UpdateDetails from "./components/updates/UpdateDetails.vue";
+const Dashboard = () => import("./components/dashboard.vue");
+const UpdateDetails = () => import("./components/updates/UpdateDetails.vue");
 
-import dashboardLayout from "./components/layouts/dashboard.vue";
+const dashboardLayout = () => import("./components/layouts/dashboard.vue");
 
-import data from "./components/data/Buydata.vue";
-import bulkdata from "./components/data/BulkData.vue";
-import vendbulkdata from "./components/data/VendBulkData.vue";
-import bulkdatatransactions from "./components/data/BulkDataTransactions.vue";
-import singlebuckettransaction from "./components/data/single_bucket_transactions.vue";
-import allbuckettransactions from "./components/data/all_bucket_transactions.vue";
-import bucketdatapricing from "./components/data/bucket_data_pricing_list.vue";
-import general_bucket_balances from "./components/data/general_bucket_balances.vue";
-import purchasemode from "./components/data/purchase_mode.vue";
-import allunconfirmedbuckettransactions from "./components/data/all_unconfirmed_bucket_transactions.vue";
-import airtime from "./components/data/Airtime.vue";
-import upgradeaccount from "./components/data/UpgradeAccount.vue";
+const data = () => import("./components/data/Buydata.vue");
+const bulkdata = () => import("./components/data/BulkData.vue");
+const vendbulkdata = () => import("./components/data/VendBulkData.vue");
+const bulkdatatransactions = () => import("./components/data/BulkDataTransactions.vue");
+const singlebuckettransaction = () => import("./components/data/single_bucket_transactions.vue");
+const allbuckettransactions = () => import("./components/data/all_bucket_transactions.vue");
+const bucketdatapricing = () => import("./components/data/bucket_data_pricing_list.vue");
+const general_bucket_balances = () => import("./components/data/general_bucket_balances.vue");
+const purchasemode = () => import("./components/data/purchase_mode.vue");
+const allunconfirmedbuckettransactions = () => import("./components/data/all_unconfirmed_bucket_transactions.vue");
+const airtime = () => import("./components/data/Airtime.vue");
+const upgradeaccount = () => import("./components/data/UpgradeAccount.vue");
 
-import cable from "./components/data/Cable.vue";
-import electricity from "./components/data/Electricity.vue";
-import airtime2cash from "./components/data/Airtime2Cash.vue";
-import verifyotpmtn from "./components/data/verify_otp_mtn.vue";
-import exams from "./components/data/Exam.vue";
-import transactions from "./components/data/transactions.vue";
-import alltransactions from "./components/data/alltransactions.vue";
-import allunconfirmedtransactions from "./components/data/allunconfirmedtransactions.vue";
-import viewtransaction from "./components/data/transactionsbyuser.vue";
-import viewbuckettransaction from "./components/data/buckettransactionsbyuser.vue";
-import manual from "./components/data/Manual.vue";
-import fundWallet from "./components/data/FundWallet.vue";
-import admin_general_bucket_balances from "./components/data/admin_general_bucket_balances.vue";
-import commission from "./components/commissions/allcommissions.vue";
-import withdraw from "./components/data/Withdraw.vue";
+const cable = () => import("./components/data/Cable.vue");
+const electricity = () => import("./components/data/Electricity.vue");
+const airtime2cash = () => import("./components/data/Airtime2Cash.vue");
+const verifyotpmtn = () => import("./components/data/verify_otp_mtn.vue");
+const exams = () => import("./components/data/Exam.vue");
+const transactions = () => import("./components/data/transactions.vue");
+const alltransactions = () => import("./components/data/alltransactions.vue");
+const allunconfirmedtransactions = () => import("./components/data/allunconfirmedtransactions.vue");
+const viewtransaction = () => import("./components/data/transactionsbyuser.vue");
+const viewbuckettransaction = () => import("./components/data/buckettransactionsbyuser.vue");
+const manual = () => import("./components/data/Manual.vue");
+const fundWallet = () => import("./components/data/FundWallet.vue");
+const admin_general_bucket_balances = () => import("./components/data/admin_general_bucket_balances.vue");
+const commission = () => import("./components/commissions/allcommissions.vue");
+const withdraw = () => import("./components/data/Withdraw.vue");
 
-import settings from "./components/settings/Settings.vue";
-import mtn_logins from "./components/categories/allmtnlogins.vue";
-import users from "./components/users/allusers.vue";
-import edituser from "./components/users/edituser.vue";
-import receipt from "./components/data/Receipt.vue";
-import bucketreceipt from "./components/data/BucketReceipt.vue";
+const settings = () => import("./components/settings/Settings.vue");
+const mtn_logins = () => import("./components/categories/allmtnlogins.vue");
+const users = () => import("./components/users/allusers.vue");
+const edituser = () => import("./components/users/edituser.vue");
+const receipt = () => import("./components/data/Receipt.vue");
+const bucketreceipt = () => import("./components/data/BucketReceipt.vue");
 
-import products from "./components/categories/allcategories.vue";
-import adminBucket from "./components/categories/allbuckets.vue";
-import editAdminBucket from "./components/categories/editBuckets.vue";
-import allpins from "./components/categories/allpins.vue";
-import editcategory from "./components/categories/EditCategory.vue";
-import editpin from "./components/categories/editpins.vue";
-import profile from "./components/settings/Profile.vue";
-import BvnVerify from "./components/settings/BvnVerify.vue";
-import slides from "./components/sliders/allslides.vue";
-import sms from "./components/data/Sms.vue";
-import sales_analysis from "./components/data/sales_analysis.vue";
-import user_sales_analysis from "./components/data/user_sales_analysis.vue";
-import admin_user_sales_analysis from "./components/data/admin_user_sales_analysis.vue";
+const products = () => import("./components/categories/allcategories.vue");
+const adminBucket = () => import("./components/categories/allbuckets.vue");
+const editAdminBucket = () => import("./components/categories/editBuckets.vue");
+const allpins = () => import("./components/categories/allpins.vue");
+const editcategory = () => import("./components/categories/EditCategory.vue");
+const editpin = () => import("./components/categories/editpins.vue");
+const profile = () => import("./components/settings/Profile.vue");
+const BvnVerify = () => import("./components/settings/BvnVerify.vue");
+const slides = () => import("./components/sliders/allslides.vue");
+const sms = () => import("./components/data/Sms.vue");
+const sales_analysis = () => import("./components/data/sales_analysis.vue");
+const user_sales_analysis = () => import("./components/data/user_sales_analysis.vue");
+const admin_user_sales_analysis = () => import("./components/data/admin_user_sales_analysis.vue");
 
-import bucket_sales_analysis from "./components/data/bucket_sales_analysis.vue";
-import user_bucket_sales_analysis from "./components/data/user_bucket_sales_analysis.vue";
-import admin_user_bucket_sales_analysis from "./components/data/admin_user_bucket_sales_analysis.vue";
+const bucket_sales_analysis = () => import("./components/data/bucket_sales_analysis.vue");
+const user_bucket_sales_analysis = () => import("./components/data/user_bucket_sales_analysis.vue");
+const admin_user_bucket_sales_analysis = () => import("./components/data/admin_user_bucket_sales_analysis.vue");
 
-import MonnifyRepush from "./components/data/MonnifyRepush.vue";
-import repush from "./components/data/Repush.vue";
-import referralDashboard from "./components/referrals/ReferralDashboard.vue";
-import referralAdmin from "./components/referrals/ReferralAdmin.vue";
-import whatsAppTransactionsAdmin from "./components/whatsapp/WhatsAppTransactionsAdmin.vue";
+const MonnifyRepush = () => import("./components/data/MonnifyRepush.vue");
+const repush = () => import("./components/data/Repush.vue");
+const referralDashboard = () => import("./components/referrals/ReferralDashboard.vue");
+const referralAdmin = () => import("./components/referrals/ReferralAdmin.vue");
+const whatsAppTransactionsAdmin = () => import("./components/whatsapp/WhatsAppTransactionsAdmin.vue");
 
-import callback from "./components/callback.vue";
-import Admin_accounting_analysis from "./components/data/admin_accounting_analysis.vue";
-import Sms_disclaimer from "./components/data/sms_disclaimer.vue";
+const callback = () => import("./components/callback.vue");
+const Admin_accounting_analysis = () => import("./components/data/admin_accounting_analysis.vue");
 
 const routes = [
     {
@@ -235,11 +235,7 @@ const routes = [
             {
                 path: "/dashboard/sms-disclaimer",
                 name: "sms-disclaimer",
-                component: Sms_disclaimer,
-                meta: {
-                    requiresAuth: true,
-                    title: "Bulk SMS Disclaimer",
-                },
+                redirect: "/dashboard/sms",
             },
 
             {

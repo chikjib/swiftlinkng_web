@@ -114,6 +114,7 @@ class InternationalTopupTest extends InternationalPurchaseTestCase
     {
         parent::setUp();
         (require __DIR__ . '/../../database/migrations/2026_10_11_000001_create_international_topups.php')->up();
+        (require __DIR__ . '/../../database/migrations/2026_10_17_000001_add_sochitel_international_provider.php')->up();
         $this->db->table('international_settings')->update(['enabled' => true]);
         $this->service = new FakeInternational();
     }

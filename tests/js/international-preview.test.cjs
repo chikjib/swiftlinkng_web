@@ -60,3 +60,20 @@ test('country search matches names, ISO codes and calling prefixes', () => {
   state.countrySearch = '+234'; assert.equal(state.filteredCountries[0].code, 'NG');
   state.countrySearch = 'missing country'; assert.equal(state.filteredCountries.length, 0);
 });
+
+test('Sochitel data products sharing an amount keep separate prices and selection IDs', async () => {
+  const {state,requests} = harness();
+  state.type = 'data';
+  state.operator = {id:7,provider:'sochitel',plans:[{amount:'50.00',product_id:11,name:'5GB 30 days'},{amount:'50.00',product_id:12,name:'10GB 7 days'}]};
+  const loading = state.loadPrices();
+  assert.equal(requests[0].body.product_id,11);
+  requests[0].resolve({data:{data:{amount_kobo:618000}}}); await settle();
+  assert.equal(requests[1].body.product_id,12);
+  requests[1].resolve({data:{data:{amount_kobo:772500}}}); await loading;
+  state.selectPlan(state.operator.plans[1]);
+  assert.equal(state.prices[state.priceKey()],772500);
+  assert.equal(state.input().provider,'sochitel');
+  assert.equal(state.input().product_id,12);
+  state.selectPlan(state.operator.plans[0]);
+  assert.equal(state.prices[state.priceKey()],618000);
+});

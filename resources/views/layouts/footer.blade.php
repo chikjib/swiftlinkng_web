@@ -71,15 +71,11 @@
                   </div>
               </div>
                <!-- POSTIVE SSL -->
-<script type="text/javascript"> //<![CDATA[
-  var tlJsHost = ((window.location.protocol == "https:") ? "https://secure.trust-provider.com/" : "http://www.trustlogo.com/");
-  document.write(unescape("%3Cscript src='" + tlJsHost + "trustlogo/javascript/trustlogo.js' type='text/javascript'%3E%3C/script%3E"));
-//]]></script>
-<script type="text/javascript">
-  if (typeof window.TrustLogo === "function") {
-    window.TrustLogo("https://www.positivessl.com/images/seals/positivessl_trust_seal_md_167x42.png", "POSDV", "none");
-  }
-</script>
+<a href="https://secure.trust-provider.com/ttb_searcher/trustlogo?v_querytype=W&amp;v_shortname=POSDV&amp;v_search={{ urlencode(url('/')) }}"
+   target="_blank" rel="noopener noreferrer" aria-label="Verify our SSL certificate">
+    <img src="https://www.positivessl.com/images/seals/positivessl_trust_seal_md_167x42.png"
+         alt="PositiveSSL secured" width="167" height="42" loading="lazy" decoding="async">
+</a>
 <!-- End POSITIVE SSL -->
           </div>
 <div style="text-align:center; color: white;">SWIFTLINK SERVICES LTD. Licensed by <a target="_blank" href="https://ncc.gov.ng" style="color: white;">NCC</a>. License No: CL/S&I/0366/2024</div>

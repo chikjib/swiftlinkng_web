@@ -5,14 +5,17 @@
     <form class="swift-form-stack" @submit.prevent="sendsms">
       <div class="swift-form-group"><label for="sender-id">Sender ID</label><div class="swift-field-wrap"><i class="fas fa-signature"></i><input id="sender-id" v-model="form.senderID" maxlength="13" required class="form-control" placeholder="Your sender name" /></div></div>
       <div class="swift-form-group"><label for="sms-numbers">Recipients</label><textarea id="sms-numbers" v-model="form.phone" required class="form-control" rows="4" placeholder="Enter phone numbers separated by commas, e.g. 08123456789,08140003288"></textarea></div>
-      <div class="swift-form-group">
-        <label for="sms-recipient-file">Upload recipient numbers (.txt or .csv)</label>
+      <details class="sms-import-option">
+        <summary>Or add recipients from a file <span>(optional)</span></summary>
+        <div class="swift-form-group sms-import-fields">
+        <label for="sms-recipient-file">Choose a text file (.txt or .csv)</label>
         <input id="sms-recipient-file" type="file" accept=".txt,.csv,text/plain,text/csv" class="form-control" :disabled="isloading || importing" aria-describedby="sms-upload-help" @change="importRecipients" />
-        <small id="sms-upload-help">Use one number per line or separate numbers with commas. A phone/number header is optional. Upload numbers only; keep leading zeros and save spreadsheet phone cells as text. Maximum file size: 2 MB. Numbers are added to the list above.</small>
+        <small id="sms-upload-help">Enter numbers only, one number per line or comma-separated. Text format, max 2 MB.</small>
         <p v-if="importing" role="status">Importing numbers…</p>
         <p v-if="importSummary" role="status">{{ importSummary }}</p>
         <p v-if="importError" class="text-danger" role="alert">{{ importError }}</p>
-      </div>
+        </div>
+      </details>
       <section class="swift-service-card">
         <h2>Saved recipient lists</h2>
         <p>Saving is optional. Imported numbers are only saved when you choose “Save list”.</p>
@@ -32,8 +35,19 @@
       <div class="swift-form-group"><label for="sms-message">Message</label><textarea id="sms-message" v-model="message" required class="form-control" rows="5" placeholder="Type your message"></textarea><div class="d-flex justify-content-between mt-2"><span>Page {{ page }}</span><strong>{{ message.length }} / {{ page * 160 }}</strong></div></div>
       <section class="swift-service-card swift-price-note"><span>Estimated total</span><strong>₦{{ totalCost.toFixed(2) }}</strong></section>
       <p>{{ recipientCount }} recipient(s) × {{ page }} page(s) × ₦{{ Number(form.amount || 0).toFixed(2) }} per recipient per page</p>
-      <p>Bulk SMS only delivers from 8am to 8pm.</p>
       <button class="swift-primary-action" type="submit" :disabled="isloading || importing">{{ isloading ? 'Sending…' : 'Send SMS' }}</button>
+      <section class="swift-service-card sms-guidelines" aria-labelledby="sms-guidelines-heading">
+        <h2 id="sms-guidelines-heading">Important Guidelines Before Sending SMS</h2>
+        <ul>
+          <li>SMS only deliver between 8am to 8pm</li>
+          <li><strong>DND Restrictions:</strong> Numbers on DND may not receive promotional SMS. Always send a test message before sending in bulk.</li>
+          <li><strong>Restricted Names:</strong> Avoid mentioning banks or payment companies in your sender ID or message.</li>
+          <li><strong>International Brands:</strong> Do not include names like WhatsApp or Facebook.</li>
+          <li><strong>Number Formatting:</strong> Avoid 4 or more consecutive digits, as networks may flag them as OTPs. Use 5,000 instead of 5000.</li>
+          <li><strong>SMS Length:</strong> One SMS contains 160 characters. Longer messages are split into 153-character pages. The ₦ symbol is converted to N.</li>
+          <li><strong>Sender ID Safety:</strong> Violating these guidelines may result in your sender ID being blocked by mobile networks.</li>
+        </ul>
+      </section>
     </form>
   </main>
 </template>
@@ -238,6 +252,15 @@ export default {
 </script>
 
 <style scoped>
+.sms-import-option { padding: 12px 0; border-top: 1px solid var(--swift-border, #ddd); border-bottom: 1px solid var(--swift-border, #ddd); }
+.sms-import-option summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.sms-import-option summary span { font-weight: 400; }
+.sms-import-fields { margin-top: 12px; }
+.sms-import-fields small { display: block; margin-top: 8px; line-height: 1.5; }
+.sms-guidelines { margin-top: 20px; }
+.sms-guidelines ul { list-style-type: disc; padding-left: 22px; overflow: visible; }
+.sms-guidelines li { float: none; border: 0; margin: 0 0 10px; border-radius: 0; line-height: 1.6; }
+.sms-guidelines li:last-child { margin-bottom: 0; }
 .sms-saved-list { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--swift-border, #ddd); }
 .sms-saved-list > span { flex: 1; min-width: 140px; overflow-wrap: anywhere; }
 .sms-saved-list small { display: block; }

@@ -14,6 +14,7 @@ Route::middleware(['auth:api', 'throttle:60,1'])->prefix('international')->group
 Route::middleware(['auth:api', 'admin.only', 'throttle:30,1'])->prefix('admin/international')->group(function () {
     Route::get('settings', [C::class, 'settings']);
     Route::put('settings', [C::class, 'updateSettings']);
+    Route::post('sochitel/test', [C::class, 'testSochitel'])->middleware('throttle:5,1');
     Route::get('transactions', [C::class, 'transactions']);
     Route::post('transactions/{id}/resolve', [C::class, 'resolve']);
 });

@@ -108,7 +108,7 @@
     </li>
 
     <li class="nav-item">
-      <a href="/dashboard/sms-disclaimer" class="nav-link">
+      <a href="/dashboard/sms" class="nav-link">
         <i class="fas fa-fw fa-envelope"></i>
 
         <span class="menu-title">SMS</span>

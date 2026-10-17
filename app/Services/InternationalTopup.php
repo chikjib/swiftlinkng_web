@@ -23,6 +23,17 @@ class InternationalTopup
         abort_unless($s->enabled, 503, 'International top-up is currently unavailable.');
         return $s;
     }
+    public function provider(?object $s = null): string
+    {
+        return ($s ?? $this->settings())->provider ?? 'vtugate';
+    }
+    private function selectionCost(array $in, object $s, bool $fresh = false): array
+    {
+        if ($this->provider($s) === 'sochitel') {
+            return app(Sochitel::class)->selection($s, $in, $fresh);
+        }
+        return ['cost' => $this->data('fxrate', ['operator_id' => $in['operator_id'], 'amount' => $in['amount']])['charged_to_user'] ?? null];
+    }
     public function request(string $path, array $body = []): array
     {
         $s = $this->settings();
@@ -52,7 +63,9 @@ class InternationalTopup
     public function countries(): array
     {
         $this->enabled();
-        $codes = json_decode($this->settings()->calling_codes ?? '{}', true);
+        $s = $this->settings();
+        if ($this->provider($s) === 'sochitel') return app(Sochitel::class)->countries($s);
+        $codes = json_decode($s->calling_codes ?? '{}', true);
         return array_map(function ($c) use ($codes) {
             $iso = $c['isoName'];
             return ['code' => $iso, 'name' => $c['name'], 'calling_code' => $codes[$iso] ?? $c['callingCodes'][0] ?? '', 'flag' => $c['flag'] ?? null];
@@ -88,6 +101,10 @@ class InternationalTopup
 
     public function catalog(string $country, string $type): array
     {
+        $s = $this->enabled();
+        if ($this->provider($s) === 'sochitel') {
+            return array_map(function ($o) { unset($o['_operator'], $o['_products']); return $o; }, app(Sochitel::class)->catalog($s, $country, $type));
+        }
         return array_map(function ($o) use ($country, $type) {
             $plans = [];
             $localAmounts = array_values($o['localFixedAmounts'] ?? []);
@@ -113,21 +130,28 @@ class InternationalTopup
                     if (str_contains($name, $brand)) { $fallbackLogo = '/template/images/services/'.$file; break; }
                 }
             }
-            return ['id' => $o['operatorId'] ?? $o['id'], 'name' => $o['name'], 'logo' => $logo ?? $fallbackLogo, 'fallback_logo' => $fallbackLogo, 'currency' => $o['destinationCurrencyCode'] ?? '', 'min' => $o['localMinAmount'] ?? (count($plans) ? min(array_column($plans, 'amount')) : null), 'max' => $o['localMaxAmount'] ?? (count($plans) ? max(array_column($plans, 'amount')) : null), 'plans' => $plans];
+            return ['provider' => 'vtugate', 'id' => $o['operatorId'] ?? $o['id'], 'name' => $o['name'], 'logo' => $logo ?? $fallbackLogo, 'fallback_logo' => $fallbackLogo, 'currency' => $o['destinationCurrencyCode'] ?? '', 'min' => $o['localMinAmount'] ?? (count($plans) ? min(array_column($plans, 'amount')) : null), 'max' => $o['localMaxAmount'] ?? (count($plans) ? max(array_column($plans, 'amount')) : null), 'plans' => $plans];
         }, $this->operators($country, $type));
     }
     public function validateSelection(array $in): array
     {
         $country = collect($this->countries())->firstWhere('code', $in['country_code']);
         abort_unless($country && $country['calling_code'], 422, 'Country calling code unavailable.');
-        $o = collect($this->operators($in['country_code'], $in['type']))->first(fn($o) => (int) ($o['operatorId'] ?? $o['id']) === (int) $in['operator_id']);
-        abort_unless($o, 422, 'Select an available operator.');
-        $amount = (float) $in['amount'];
-        $fixed = $o['localFixedAmounts'] ?? [];
-        if (($o['denominationType'] ?? 'FIXED') === 'FIXED') {
-            abort_unless(in_array($amount, $fixed), 422, 'Select an available plan or denomination.');
+        $s = $this->settings();
+        $provider = $this->provider($s);
+        abort_unless(($in['provider'] ?? 'vtugate') === $provider, 422, 'International route changed. Select the country and operator again.');
+        if ($provider === 'sochitel') {
+            $o = app(Sochitel::class)->selection($s, $in)['operator'];
         } else {
-            abort_unless(isset($o['localMinAmount'], $o['localMaxAmount']) && $amount >= $o['localMinAmount'] && $amount <= $o['localMaxAmount'], 422, 'Amount is outside this operator’s limits.');
+            $o = collect($this->operators($in['country_code'], $in['type']))->first(fn($o) => (int) ($o['operatorId'] ?? $o['id']) === (int) $in['operator_id']);
+            abort_unless($o, 422, 'Select an available operator.');
+            $amount = (float) $in['amount'];
+            $fixed = $o['localFixedAmounts'] ?? [];
+            if (($o['denominationType'] ?? 'FIXED') === 'FIXED') {
+                abort_unless(in_array($amount, $fixed), 422, 'Select an available plan or denomination.');
+            } else {
+                abort_unless(isset($o['localMinAmount'], $o['localMaxAmount']) && $amount >= $o['localMinAmount'] && $amount <= $o['localMaxAmount'], 422, 'Amount is outside this operator’s limits.');
+            }
         }
         $digits = preg_replace('/\D/', '', $in['phone']);
         $prefix = ltrim($country['calling_code'], '+');
@@ -140,17 +164,21 @@ class InternationalTopup
     public function preview(array $in): array
     {
         [$o] = $this->validateSelection($in);
-        $r = $this->data('fxrate', ['operator_id' => $in['operator_id'], 'amount' => $in['amount']]);
-        return ['amount_kobo' => self::price($r['charged_to_user'] ?? null, $this->settings()->multiplier)];
+        $s = $this->settings();
+        $r = $this->selectionCost($in, $s);
+        return ['amount_kobo' => self::price($r['cost'], $s->multiplier)];
     }
     public function quote(int $user, array $in): object
     {
-        [$o, $phone] = $this->validateSelection($in);
-        $s = $this->enabled();
-        $r = $this->data('fxrate', ['operator_id' => $in['operator_id'], 'amount' => $in['amount']]);
-        $id = (string) Str::uuid();
-        DB::table('international_quotes')->insert(['id' => $id, 'user_id' => $user, 'country_code' => $in['country_code'], 'type' => $in['type'], 'recipient_number' => $phone, 'operator_id' => $in['operator_id'], 'operator_name' => $o['name'], 'local_amount' => $in['amount'], 'provider_price' => $r['charged_to_user'], 'multiplier' => $s->multiplier, 'amount_kobo' => self::price($r['charged_to_user'], $s->multiplier), 'expires_at' => now()->addMinutes(2), 'created_at' => now(), 'updated_at' => now()]);
-        return DB::table('international_quotes')->where('id', $id)->first();
+        return DB::transaction(function () use ($user, $in) {
+            $this->settings(true);
+            [$o, $phone] = $this->validateSelection($in);
+            $s = $this->enabled();
+            $r = $this->selectionCost($in, $s);
+            $id = (string) Str::uuid();
+            DB::table('international_quotes')->insert(['id' => $id, 'user_id' => $user, 'country_code' => $in['country_code'], 'type' => $in['type'], 'recipient_number' => $phone, 'operator_id' => $in['operator_id'], 'operator_name' => $o['name'], 'local_amount' => $in['amount'], 'provider' => $this->provider($s), 'provider_account' => $this->provider($s) === 'sochitel' ? app(Sochitel::class)->account($s) : null, 'product_id' => $in['product_id'] ?? null, 'provider_payload' => isset($r['payload']) ? json_encode($r['payload']) : null, 'provider_price' => $r['cost'], 'multiplier' => $s->multiplier, 'amount_kobo' => self::price($r['cost'], $s->multiplier), 'expires_at' => now()->addMinutes(2), 'created_at' => now(), 'updated_at' => now()]);
+            return DB::table('international_quotes')->where('id', $id)->first();
+        });
     }
     public function purchase(int $userId, string $quoteId): object
     {
@@ -166,15 +194,18 @@ class InternationalTopup
             abort_unless($s->enabled, 503, 'International top-up is currently unavailable.');
             abort_if(now()->greaterThan($q->expires_at), 422, 'Quote expired. Please preview again.');
             // Refresh provider cost immediately before reserving funds. A change requires a fresh customer confirmation.
-            $r = $this->data('fxrate', ['operator_id' => $q->operator_id, 'amount' => $q->local_amount]);
-            abort_unless(self::price($r['charged_to_user'] ?? null, $s->multiplier) === (int) $q->amount_kobo, 422, 'Price changed. Please preview and confirm the new price.');
+            abort_unless(($q->provider ?? 'vtugate') === $this->provider($s), 422, 'International route changed. Please select and confirm again.');
+            if ($q->provider === 'sochitel') abort_unless($q->provider_account === app(Sochitel::class)->account($s), 422, 'Provider account changed. Please confirm again.');
+            $r = $this->selectionCost(['country_code' => $q->country_code, 'type' => $q->type, 'operator_id' => $q->operator_id, 'product_id' => $q->product_id, 'amount' => $q->local_amount], $s, true);
+            if ($q->provider === 'sochitel') abort_unless(json_decode($q->provider_payload, true) === $r['payload'], 422, 'Product changed. Please select and confirm again.');
+            abort_unless(self::price($r['cost'] ?? null, $s->multiplier) === (int) $q->amount_kobo, 422, 'Price changed. Please preview and confirm the new price.');
             abort_unless((int) round($user->wallet * 100) >= $q->amount_kobo, 422, 'Insufficient wallet balance.');
             $amount = number_format($q->amount_kobo / 100, 2, '.', '');
             $before = $user->wallet;
             $user->decrement('wallet', $amount);
-            $ref = 'SLI' . Str::random(28);
+            $ref = 'SLI' . strtoupper(Str::random(27));
             $order = DB::table('orders')->insertGetId(['ref' => $ref, 'user_id' => $userId, 'subcategory_id' => $s->subcategory_id, 'plan' => $q->operator_name, 'amount' => $amount, 'quantity' => 1, 'subtotal' => $amount, 'total' => $amount, 'phone' => $q->recipient_number, 'channel' => 'App', 'prev_bal' => $before, 'bal' => $before - $amount, 'description' => 'International ' . $q->type, 'status' => 0, 'created_at' => now(), 'updated_at' => now()]);
-            $id = DB::table('international_purchases')->insertGetId(['user_id' => $userId, 'quote_id' => $quoteId, 'order_id' => $order, 'reference' => $ref, 'amount_kobo' => $q->amount_kobo, 'created_at' => now(), 'updated_at' => now()]);
+            $id = DB::table('international_purchases')->insertGetId(['provider' => $q->provider, 'user_id' => $userId, 'quote_id' => $quoteId, 'order_id' => $order, 'reference' => $ref, 'amount_kobo' => $q->amount_kobo, 'created_at' => now(), 'updated_at' => now()]);
             return DB::table('international_purchases')->where('id', $id)->first();
         });
         // Only the first caller may dispatch. Never resend after a timeout or process crash.
@@ -184,6 +215,19 @@ class InternationalTopup
         }
         try {
             $q = DB::table('international_quotes')->where('id', $quoteId)->first();
+            if ($q->provider === 'sochitel') {
+                $s = $this->settings();
+                abort_unless($q->provider_account === app(Sochitel::class)->account($s), 503, 'Provider account changed.');
+                $payload = json_decode($q->provider_payload, true, 512, JSON_THROW_ON_ERROR);
+                $r = app(Sochitel::class)->request($s, 'POST', '/transaction', $payload + ['recipient' => $q->recipient_number, 'amount' => (string) $q->local_amount, 'reference' => $row->reference]);
+                // These documented request rejections create no transaction. Duplicate references
+                // and ambiguous server errors must instead be recovered by reference lookup.
+                if (empty($r['id']) && in_array((int) ($r['errno'] ?? -1), [17,101,102,105,106,107,108,109,110,111], true)) {
+                    DB::table('international_purchases')->where('id', $row->id)->update(['details' => json_encode(['rejection_code' => (int) $r['errno']])]);
+                    return $this->settle($row, 'reversed');
+                }
+                return $this->recordSochitel($row, $q, $r);
+            }
             $r = $this->request('topup', ['operator_id' => $q->operator_id, 'amount' => $q->local_amount, 'country_code' => $q->country_code, 'recipient_number' => $q->recipient_number]);
             $data = $r['data'] ?? [];
             if (!empty($data['transaction_id'])) {
@@ -200,10 +244,18 @@ class InternationalTopup
     }
     public function refresh(object $row): object
     {
-        if (!in_array($row->status, ['pending', 'processing']) || !$row->transaction_id) {
+        if (!in_array($row->status, ['pending', 'processing'])) {
             return $row;
         }
         try {
+            if (($row->provider ?? 'vtugate') === 'sochitel') {
+                $q = DB::table('international_quotes')->where('id', $row->quote_id)->first();
+                $s = $this->settings();
+                abort_unless($q->provider_account === app(Sochitel::class)->account($s), 503, 'Restore the original Sochitel account to check this purchase.');
+                $r = app(Sochitel::class)->request($s, 'GET', '/transaction/user/' . rawurlencode($row->reference));
+                return $this->recordSochitel($row, $q, $r);
+            }
+            if (!$row->transaction_id) return $row;
             $r = $this->data('topupstatus', ['transaction_id' => $row->transaction_id]);
             if (($r['status'] ?? '') === 'SUCCESSFUL') {
                 return $this->settle($row, 'success');
@@ -214,6 +266,27 @@ class InternationalTopup
         } catch (\Throwable $e) {
         }
         return $row;
+    }
+    private function recordSochitel(object $row, object $q, array $r): object
+    {
+        // Match the provider response against the exact frozen product and payment.
+        $payload = json_decode($q->provider_payload ?? '{}', true);
+        if (empty($r['id']) || !ctype_digit((string) $r['id']) ||
+            strcasecmp((string) ($r['reference'] ?? ''), $row->reference) !== 0 ||
+            (string) ($r['recipient'] ?? '') !== $q->recipient_number ||
+            (string) ($r['product'] ?? '') !== ($payload['product'] ?? '') ||
+            (string) ($r['operator']['id'] ?? '') !== ($payload['operator'] ?? '') ||
+            ($r['operator']['currency'] ?? '') !== ($payload['currency'] ?? '') ||
+            !is_numeric($r['amount']['operator'] ?? null) ||
+            abs((float) $r['amount']['operator'] - (float) $q->local_amount) > 0.001) {
+            return DB::table('international_purchases')->where('id', $row->id)->first();
+        }
+        $pin = is_array($r['pin'] ?? null) ? $r['pin'] : [];
+        $details = ['provider_status' => $r['status'] ?? null, 'pin_detail' => trim(implode(' ', array_filter([$pin['number'] ?? '', $pin['serial'] ?? '', $r['instructions'] ?? '']))) ?: null];
+        DB::table('international_purchases')->where('id', $row->id)->update(['transaction_id' => $r['id'], 'details' => json_encode($details), 'updated_at' => now()]);
+        $outcome = app(Sochitel::class)->outcome($r);
+        if ($outcome === 'success' && (int) ($r['errno'] ?? -1) !== 0) $outcome = null;
+        return $outcome ? $this->settle($row, $outcome) : DB::table('international_purchases')->where('id', $row->id)->first();
     }
     public function settle(object $row, string $status): object
     {
