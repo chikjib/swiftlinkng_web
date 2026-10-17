@@ -15,7 +15,6 @@
         <p v-if="importSummary" role="status">{{ importSummary }}</p>
         <p v-if="importError" class="text-danger" role="alert">{{ importError }}</p>
         </div>
-      </details>
       <section class="swift-service-card">
         <h2>Saved recipient lists</h2>
         <p>Saving is optional. Imported numbers are only saved when you choose “Save list”.</p>
@@ -32,6 +31,7 @@
           <button type="button" class="btn btn-outline-secondary" :disabled="listBusy" @click="deleteRecipientList(list)">Delete</button>
         </div>
       </section>
+      </details>
       <div class="swift-form-group"><label for="sms-message">Message</label><textarea id="sms-message" v-model="message" required class="form-control" rows="5" placeholder="Type your message"></textarea><div class="d-flex justify-content-between mt-2"><span>Page {{ page }}</span><strong>{{ message.length }} / {{ page * 160 }}</strong></div></div>
       <section class="swift-service-card swift-price-note"><span>Estimated total</span><strong>₦{{ totalCost.toFixed(2) }}</strong></section>
       <p>{{ recipientCount }} recipient(s) × {{ page }} page(s) × ₦{{ Number(form.amount || 0).toFixed(2) }} per recipient per page</p>
