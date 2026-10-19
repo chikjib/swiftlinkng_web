@@ -64,9 +64,13 @@ class Subcategory extends Model
                         $new = [];
                         $new['plan']                 = $item->plan;
                         $new['amount']          = $this->getUserLevel($item, Auth::user()->userlevel);
+                        if ($this->description === 'AUTOSYNCAWUF' && \App\Services\InternetService::isFibre($this->title.' '.$item->plan)) {
+                            $new['amount'] = app(\App\Services\InternetAdmin::class)->fibrePrice($this, (array) $item, (int) Auth::user()->userlevel);
+                            if ($new['amount'] === null) return null;
+                        }
                         return $new;
                     }
-                );
+                )->filter()->values();
         }
 
 

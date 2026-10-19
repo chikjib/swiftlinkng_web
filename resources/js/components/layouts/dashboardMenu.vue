@@ -4,6 +4,8 @@
       <span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-broadcast-tower"></i></span><strong>Data</strong></span>
     </a>
 
+    <a href="/dashboard/internet" class="swift-quick-tile swift-service-data"><span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-wifi"></i></span><strong>Internet</strong></span></a>
+
     <a href="/dashboard/airtime" class="swift-quick-tile swift-service-airtime">
       <span class="swift-router-content"><span class="swift-quick-icon"><i class="fas fa-phone"></i></span><strong>Airtime</strong></span>
     </a>

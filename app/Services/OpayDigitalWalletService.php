@@ -14,7 +14,33 @@ class OpayDigitalWalletService
     public function createWallet(array $parameters): array
     {
         $this->validateCreateWalletParameters($parameters);
-        return $this->request('/api/v2/third/depositcode/generateStaticDepositCode', $parameters);
+        try {
+            return $this->requestWallet($parameters);
+        } catch (RuntimeException $e) {
+            // Retry only an explicit rejection of the email's length, never a
+            // timeout or an ambiguous response that may have created a wallet.
+            if (empty($parameters['email']) || empty($parameters['refId']) || !self::isEmailLengthRejection($e->getMessage())) throw $e;
+            unset($parameters['email']);
+            $parameters['sendPassWordFlag'] = 'N';
+            return $this->requestWallet($parameters);
+        }
+    }
+
+    private function requestWallet(array $parameters): array
+    {
+        $response = $this->request('/api/v2/third/depositcode/generateStaticDepositCode', $parameters);
+        // The encrypted business envelope can reject an otherwise valid transport request.
+        if (isset($response['code']) && (string) $response['code'] !== '00000') {
+            throw new RuntimeException('OPay rejected the request ('.$response['code'].'): '.($response['message'] ?? 'Wallet creation failed.'));
+        }
+        return $response;
+    }
+
+    public static function isEmailLengthRejection(string $message): bool
+    {
+        return str_contains($message, 'OPay rejected the request')
+            && (bool) preg_match('/e-?mail/i', $message)
+            && (bool) preg_match('/too (?:long|lengthy)|length|maximum|max[ .:_-]*(?:size|characters|length)|exceed/i', $message);
     }
 
     public function walletDetails(string $depositCode): array
@@ -88,7 +114,7 @@ class OpayDigitalWalletService
         return (string) config('services.opay_wallet.branch_id');
     }
 
-    private function request(string $path, array $parameters): array
+    protected function request(string $path, array $parameters): array
     {
         $this->assertConfigured();
         $shouldLogPayloads = (bool) config(

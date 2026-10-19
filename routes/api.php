@@ -170,6 +170,8 @@ Route::middleware('auth:api')->group(function () {
 
 
     Route::post('purchase/airtime', [App\Http\Controllers\API\OrderController::class, 'purchaseAirtime'])->middleware('transaction.pin')->name('orders/purchaseAirtime');
+    Route::get('internet/catalogue', [App\Http\Controllers\API\InternetController::class, 'catalogue']);
+    Route::post('purchase/internet', [App\Http\Controllers\API\InternetController::class, 'purchase'])->middleware(['transaction.pin', 'throttle:10,1']);
     Route::post('purchase/data', [App\Http\Controllers\API\OrderController::class, 'purchaseData'])->middleware('transaction.pin')->name('orders/purchaseData');
     Route::post('purchase/talkmore', [App\Http\Controllers\API\OrderController::class, 'purchaseTalkmore'])->middleware('transaction.pin')->name('orders/purchaseTalkmore');
     Route::get('reprocess/data/{order_id}', [App\Http\Controllers\API\ReprocessController::class, 'reprocessData'])->middleware('admin.only')->name('orders/repurchaseData');
@@ -248,3 +250,12 @@ require __DIR__.'/betting.php';
 require __DIR__.'/travel_services.php';
 
 require __DIR__.'/international.php';
+
+Route::middleware(['auth:api', 'admin.only', 'throttle:30,1'])->prefix('admin/internet')->group(function () {
+    Route::get('providers', [App\Http\Controllers\API\InternetAdminController::class, 'index']);
+    Route::put('providers/{provider}', [App\Http\Controllers\API\InternetAdminController::class, 'updateProvider']);
+    Route::get('providers/{provider}/packages', [App\Http\Controllers\API\InternetAdminController::class, 'packages']);
+    Route::put('providers/{provider}/packages/{id}', [App\Http\Controllers\API\InternetAdminController::class, 'updatePackage']);
+    Route::post('providers/{provider}/sync', [App\Http\Controllers\API\InternetAdminController::class, 'sync'])->middleware('throttle:internet-admin-action');
+    Route::post('providers/{provider}/test', [App\Http\Controllers\API\InternetAdminController::class, 'test'])->middleware('throttle:internet-admin-action');
+});

@@ -51,13 +51,14 @@
 
       <a href="/dashboard/manual" class="swift-funding-card"><span class="swift-router-content"><span class="swift-transaction-icon"><i class="fas fa-paper-plane"></i></span><span><strong>Manual Funding</strong><br/><em class="text-warning">⏳ Not Instant</em><br/><small>Send a transfer for manual wallet credit.</small></span><i class="fas fa-chevron-right"></i></span></a>
     </div>
+    <div v-if="bankNotice" class="swift-sheet-backdrop" @click.self="bankNotice = ''"><section class="swift-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="opay-note-title"><header class="swift-sheet-header"><h2 id="opay-note-title">OPay Account Creation</h2><button type="button" aria-label="Close" @click="bankNotice = ''">&times;</button></header><p>{{ bankNotice }}</p><button type="button" class="swift-primary-action" @click="bankNotice = ''">Choose another bank</button></section></div>
   </main>
 </template>
 
 <script>
 import axios from "axios";
 export default {
-  data() { return { home: {}, activeMethod: "", form: { amount: "" }, oneTimeAmount: "", temporaryAccount: null, loading: false, creatingBank: "", errorflag: "" }; },
+  data() { return { home: {}, activeMethod: "", form: { amount: "" }, oneTimeAmount: "", temporaryAccount: null, loading: false, creatingBank: "", bankNotice: "", errorflag: "" }; },
   computed: {
     personalAccounts() {
       return [
@@ -111,7 +112,7 @@ export default {
     createAccount(bank) {
       this.creatingBank = bank; this.errorflag = "";
       const request = bank === "opay" ? axios.post("/api/opay/wallet", {}, { headers: this.headers() }) : axios.get(`/api/reserve/account/${bank}`, { headers: this.headers() });
-      request.then(() => this.loadHome()).catch((error) => { this.errorflag = error.response?.data?.message || "Account creation is unavailable right now."; }).finally(() => { this.creatingBank = ""; });
+      request.then(() => this.loadHome()).catch((error) => { this.errorflag = error.response?.data?.message || "Account creation is unavailable right now."; if (bank === "opay") this.bankNotice = this.errorflag; }).finally(() => { this.creatingBank = ""; });
     },
     copyAccount(number) { if (!number) return; navigator.clipboard.writeText(String(number)); this.$toasted.show("Account number copied"); },
   },

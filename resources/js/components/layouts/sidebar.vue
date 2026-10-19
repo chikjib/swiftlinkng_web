@@ -68,6 +68,7 @@
     </li>
 
     <li class="nav-item">
+      <a href="/dashboard/internet" class="nav-link"><i class="fas fa-wifi menu-icon"></i><span class="menu-title">Internet</span></a>
       <a href="/dashboard/data" class="nav-link">
         <i class="fas fa-fw fa-wifi"></i>
 
@@ -226,6 +227,7 @@
       <hr class="sidebar-divider" />
       <div class="sidebar-heading">Admin</div>
 
+      <li class="nav-item"><a href="/dashboard/internet-admin" class="nav-link"><i class="fas fa-fw fa-wifi"></i><span class="menu-title">Internet Settings</span></a></li>
       <li class="nav-item">
         <a href="/dashboard/international-admin" class="nav-link"><i class="fas fa-fw fa-globe"></i><span class="menu-title">International Settings</span></a>
       </li>

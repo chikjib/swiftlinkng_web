@@ -1,5 +1,6 @@
 // Load each screen when it is visited so sign-in does not wait for the dashboard.
 const International = () => import('./components/services/International.vue');
+const InternetAdmin = () => import('./components/services/InternetAdmin.vue');
 const InternationalAdmin = () => import('./components/services/InternationalAdmin.vue');
 const BettingWallet = () => import('./components/services/Betting.vue');
 const TravelEsim = () => import('./components/services/TravelEsim.vue');
@@ -19,6 +20,7 @@ const UpdateDetails = () => import("./components/updates/UpdateDetails.vue");
 
 const dashboardLayout = () => import("./components/layouts/dashboard.vue");
 
+const internet = () => import("./components/services/Internet.vue");
 const data = () => import("./components/data/Buydata.vue");
 const bulkdata = () => import("./components/data/BulkData.vue");
 const vendbulkdata = () => import("./components/data/VendBulkData.vue");
@@ -127,6 +129,7 @@ const routes = [
         component: dashboardLayout,
         children: [
             {path:'/dashboard/international',name:'international',component:International,meta:{requiresAuth:true,title:'International'}},
+            {path:'/dashboard/internet-admin',name:'internet-admin',component:InternetAdmin,meta:{requiresAdmin:true,title:'Internet Settings'}},
             {path:'/dashboard/international-admin',name:'international-admin',component:InternationalAdmin,meta:{requiresAdmin:true,title:'International Admin'}},
             {path:'/dashboard/betting',name:'betting',component:BettingWallet,meta:{requiresAuth:true,title:'Fund Betting Wallet'}},
             {path:'/dashboard/esim',name:'esim',component:TravelEsim,meta:{requiresAuth:true,title:'Travel eSIM'}},
@@ -141,6 +144,7 @@ const routes = [
                 },
             },
 
+            { path: "/dashboard/internet", name: "internet", component: internet, meta: { requiresAuth: true, title: "Buy Internet Plan" } },
             {
                 path: "/dashboard/data",
                 name: "data",

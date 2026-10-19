@@ -1077,7 +1077,7 @@ class OrderController extends BaseController
         
         $bucket = Bucket::where('title',$bucket_title)->first();
 
-        if(!is_null($bucket) && $bucket->status == 1){
+        if(!is_null($bucket) && $bucket->status == 1 && !($subcategory->description === 'AUTOSYNCAWUF' && \App\Services\InternetService::isFibre($subcategory->title.' '.$request->plan_id))){
             $wallet_name =  $this->getBucketTitle($bucket->id);
             \Log::info($this->user->$wallet_name);
 
@@ -1131,6 +1131,11 @@ class OrderController extends BaseController
         $productCollection = collect(json_decode($subcategory->products));
         $getSelectedProduct = $productCollection->where('plan', $plan)->first();
         $amountActual = $this->getUserLevel($getSelectedProduct, $this->user->userlevel);
+        if ($subcategory->description === 'AUTOSYNCAWUF' && \App\Services\InternetService::isFibre($subcategory->title.' '.($getSelectedProduct->plan ?? ''))) {
+            $managedPrice = app(\App\Services\InternetAdmin::class)->fibrePrice($subcategory, (array) $getSelectedProduct, (int) $this->user->userlevel);
+            if ($managedPrice === null) return $this->sendError('This Fibre X package is unavailable.', [], 422);
+            $amountActual = $managedPrice;
+        }
 
         $network = explode(' ', $subcategory->title)[0];
         

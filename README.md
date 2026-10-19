@@ -125,3 +125,25 @@ Quotes freeze the provider/account/product and expire after two minutes. A route
 Verification: `php vendor/bin/phpunit --filter 'International|Sochitel'`; `node --test tests/js/international-preview.test.cjs`; `npm run build`; Flutter: `flutter test test/international_test.dart` and targeted `flutter analyze`. Tests use documented response fixtures and verify RSA signatures, both routes, named plans, pricing, route changes, timeout recovery, pending/manual outcomes and single refunds. No live Sochitel credentials or purchases were available for verification. The route stays inactive until the account's connection test passes.
 
 Provider reference: https://clientportal.sochitel.com/apidoc.html?section=getting-started
+
+### Internet service
+
+Run `php artisan migrate --force`, rebuild web assets with `npm run build`, and release the Flutter app. Internet is available at `/dashboard/internet` and in both service menus. The migration adds an Internet category and Smile, Spectranet and Nitel subcategories. Their existing admin status switches control availability.
+
+Smile loads current `smile-direct` packages and purchases through the existing VTpass credentials. Spectranet and Nitel/ntel use the Nigeria fixed-data catalogue from the Sochitel credentials in International admin, independently of the International provider switch. Sochitel Internet pricing uses that account's NGN conversion and multiplier; Smile uses the current VTpass package amount rounded up to whole naira. Missing provider packages remain unavailable rather than using sample prices. Existing AutoSync `AUTOSYNCAWUF` plans named Fibre X/FiberX are surfaced without changing their provider configuration or purchase route.
+
+Internet purchases require the transaction PIN and validate the selected package and amount on the server. New provider purchases debit and create the order atomically, retain the request key for safe retries, and keep timeouts pending. The minute scheduler runs `internet:reconcile` to query the original provider, match the transaction and settle or refund once. Do not resend pending purchases. The normal Transactions screen contains the orders.
+
+OPay: a live creation test with the requested 33-character email on 18 October 2026 was rejected with `C_1113` (request IP not whitelisted), before email-length behavior could be verified. No successful account creation was reported. Valid emails are never truncated. Only an explicit provider email-length rejection retries once using the same reference without the optional email; timeouts and IP errors never trigger this retry. Both clients display an alternative-bank note when OPay creation fails. Repeat the email test from the whitelisted server before attributing this user's issue to email length.
+
+
+### Internet admin controls
+
+Run the additional `2026_10_18_000002_add_internet_admin_controls` migration and rebuild the web assets. Admin → **Internet Settings** (`/dashboard/internet-admin`) now manages all four providers. Its API routes require an authenticated administrator and record setting changes, package syncs and connection-test results in `service_control_audits`.
+
+- **Sync packages** fetches the current Smile/Sochitel catalogue. Fibre X imports the existing AutoSync product configuration without replacing its purchase integration. Package switches and overrides survive renames and subsequent syncs; removed packages become unavailable, while failed syncs preserve the last list. After the first sync, newly introduced provider packages require another sync before sale.
+- **Provider pricing** accepts an optional multiplier and an additional NGN fee. A blank multiplier retains the original pricing (including Fibre X customer tiers). An explicit multiplier uses provider cost; when an AutoSync package has no cost, it uses its existing tier amount. Final charges round up to whole naira. Individual package overrides replace that formula. Packages priced below a known provider cost are blocked until corrected.
+- **Availability** is enforced for both clients on the server, including Fibre X packages reached through the original Data page. Purchases recheck current controls before debiting, while already pending purchases retain their original amount.
+- **Test connection** makes read-only requests: VTpass Smile catalogue, Sochitel account/currency and compatible catalogue, or AutoSync's documented `GET /me`. These checks do not submit purchases or prove that the provider's purchase permission is enabled. Existing provider credentials remain in their established configuration locations; secrets are never returned by the Internet admin endpoints.
+
+Verification: `vendor/bin/phpunit tests/Feature/InternetAdminTest.php`, the existing Internet/Sochitel/OPay/cable regression suites, and `npm run build`. Provider calls in tests are mocked; no paid provider transactions are used for admin testing.

@@ -72,7 +72,15 @@ class OpayWalletController extends BaseController
             return $this->sendResponse(new UserResource($user), 'OPay digital wallet created successfully.');
         } catch (Throwable $exception) {
             Log::error('OPay wallet creation failed.', ['user_id' => $this->user->id, 'error' => $exception->getMessage()]);
-            return $this->sendError('Unable to create OPay wallet right now.', $exception->getMessage(), 502);
+            $emailRejected = OpayDigitalWalletService::isEmailLengthRejection($exception->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $emailRejected
+                    ? 'OPay could not create your account because it rejected the email length. Please use another available bank, such as Moniepoint or PalmPay.'
+                    : 'OPay account creation is unavailable right now. Please use another available bank, such as Moniepoint or PalmPay, or try again later.',
+                'alternative_banks' => ['moniepoint', 'palmpay'],
+                'email_length_rejected' => $emailRejected,
+            ], 502);
         }
     }
 
