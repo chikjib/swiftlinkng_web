@@ -57,6 +57,10 @@ class InternationalController extends Controller
             'enabled' => (bool) $s->enabled, 'provider' => $this->service->provider($s),
             'multiplier' => $s->multiplier, 'calling_codes' => json_decode($s->calling_codes ?? '{}', true),
             'api_key_configured' => (bool) ($s->api_key || config('international.api_key')),
+            'sochitel_protocol' => $sochitel->protocol($s),
+            'sochitel_username' => $s->sochitel_username ?? null,
+            'sochitel_password_configured' => !empty($s->sochitel_password),
+            'sochitel_artx_url_configured' => (bool) config('international.sochitel_artx_url'),
             'sochitel_base_url_configured' => (bool) config('international.sochitel_base_url'),
             'sochitel_user_id' => $s->sochitel_user_id, 'sochitel_currency' => $s->sochitel_currency,
             'sochitel_ngn_rate' => $s->sochitel_ngn_rate, 'sochitel_key_configured' => (bool) $s->sochitel_private_key,
@@ -67,7 +71,7 @@ class InternationalController extends Controller
     private function auditSettings(object $s): array
     {
         $values = (array) $s;
-        unset($values['api_key'], $values['sochitel_private_key'], $values['sochitel_verification_hash']);
+        unset($values['sochitel_password'], $values['api_key'], $values['sochitel_private_key'], $values['sochitel_verification_hash']);
         return $values;
     }
     public function updateSettings(Request $r)
@@ -77,6 +81,9 @@ class InternationalController extends Controller
             'multiplier' => 'required|numeric|min:1|max:10|regex:/^\d+(\.\d{1,4})?$/',
             'api_key' => 'nullable|string|max:1000', 'calling_codes' => 'present|array|max:300',
             'calling_codes.*' => 'required|string|regex:/^\+[1-9][0-9]{0,3}$/',
+            'sochitel_protocol' => 'sometimes|in:artx,rest',
+            'sochitel_username' => 'nullable|string|max:255',
+            'sochitel_password' => 'nullable|string|max:1000',
             'sochitel_user_id' => 'nullable|string|max:100|regex:/^[0-9]+$/',
             'sochitel_private_key' => 'nullable|string|max:10000',
             'sochitel_currency' => 'sometimes|required|string|size:3|regex:/^[A-Z]{3}$/',
@@ -93,14 +100,16 @@ class InternationalController extends Controller
         DB::transaction(function () use ($r, $v) {
             $s = $this->service->settings(true);
             $values = ['enabled' => $v['enabled'], 'provider' => $v['provider'] ?? $this->service->provider($s), 'multiplier' => $v['multiplier'], 'calling_codes' => json_encode($v['calling_codes']), 'updated_at' => now()];
-            foreach (['sochitel_user_id', 'sochitel_currency', 'sochitel_ngn_rate'] as $field) if (isset($v[$field])) $values[$field] = $v[$field];
+            foreach (['sochitel_protocol', 'sochitel_username', 'sochitel_user_id', 'sochitel_currency', 'sochitel_ngn_rate'] as $field) if (isset($v[$field])) $values[$field] = $v[$field];
             if (isset($v['sochitel_logos'])) $values['sochitel_logos'] = json_encode($v['sochitel_logos']);
             if (!empty($v['api_key'])) $values['api_key'] = Crypt::encryptString($v['api_key']);
             if (!empty($v['sochitel_private_key'])) $values['sochitel_private_key'] = Crypt::encryptString($v['sochitel_private_key']);
+            if (!empty($v['sochitel_password'])) $values['sochitel_password'] = Crypt::encryptString($v['sochitel_password']);
             $next = (object) array_merge((array) $s, $values);
             if ($next->sochitel_currency === 'NGN') $values['sochitel_ngn_rate'] = $next->sochitel_ngn_rate = 1;
-            if ($next->sochitel_user_id !== $s->sochitel_user_id) {
-                abort_if(DB::table('international_purchases')->where('provider', 'sochitel')->whereIn('status', ['pending', 'processing'])->exists(), 422, 'Resolve pending Sochitel purchases before changing its account user ID.');
+            if (app(Sochitel::class)->account($next) !== app(Sochitel::class)->account($s) || $next->sochitel_currency !== $s->sochitel_currency) {
+                abort_if(\Illuminate\Support\Facades\Schema::hasTable('internet_purchases') && DB::table('internet_purchases')->where('provider', 'sochitel')->where('status', 'pending')->exists(), 422, 'Resolve pending Sochitel Internet purchases before changing accounts or protocol.');
+                abort_if(DB::table('international_purchases')->where('provider', 'sochitel')->whereIn('status', ['pending', 'processing'])->exists(), 422, 'Resolve pending Sochitel purchases before changing its account or protocol.');
             }
             if ($next->enabled) {
                 if ($next->provider === 'vtugate') abort_unless($next->api_key || config('international.api_key'), 422, 'Configure the VTUgate API key first.');
@@ -126,7 +135,7 @@ class InternationalController extends Controller
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             throw $e;
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Sochitel connection failed. Check the assigned API URL, user ID, uploaded public certificate and private key.'], 422);
+            return response()->json(['message' => 'Sochitel connection failed. Check the assigned API URL and saved credentials for the selected protocol; ask Sochitel whether a client TLS certificate is required.'], 422);
         }
     }
     public function transactions()

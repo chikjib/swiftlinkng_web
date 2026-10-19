@@ -6,18 +6,25 @@ use Illuminate\Support\Facades\{Cache, Crypt, Http, RateLimiter};
 
 class Sochitel
 {
+    public function protocol(object $s): string
+    {
+        return $s->sochitel_protocol ?? 'rest';
+    }
+
     public function account(object $s): string
     {
+        if ($this->protocol($s) === 'artx') return hash('sha256', 'artx|'.config('international.sochitel_artx_url').'|'.($s->sochitel_username ?? ''));
         return hash('sha256', rtrim(config('international.sochitel_base_url', ''), '/') . '|' . ($s->sochitel_user_id ?? ''));
     }
 
     public function verificationHash(object $s): string
     {
-        return hash('sha256', $this->account($s) . '|' . ($s->sochitel_private_key ?? '') . '|' . ($s->sochitel_currency ?? ''));
+        return hash('sha256', $this->account($s) . '|' . ($this->protocol($s) === 'artx' ? ($s->sochitel_password ?? '') : ($s->sochitel_private_key ?? '')) . '|' . ($s->sochitel_currency ?? ''));
     }
 
     public function request(object $s, string $method, string $path, array $body = []): array
     {
+        if ($this->protocol($s) === 'artx') return app(SochitelArtx::class)->request($s, $method, $path, $body);
         $base = rtrim(config('international.sochitel_base_url', ''), '/');
         $url = $base . $path;
         $parts = parse_url($url);
@@ -46,25 +53,27 @@ class Sochitel
         return $data;
     }
 
-    public function operators(object $s, bool $fresh = false): array
+    public function operators(object $s, bool $fresh = false, array $filters = []): array
     {
-        $load = function () use ($s) {
-            $r = $this->request($s, 'GET', '/operators');
+        $load = function () use ($s, $filters) {
+            $r = $this->request($s, 'GET', '/operators', $filters);
             abort_unless((int) ($r['errno'] ?? -1) === 0 && is_array($r['operators'] ?? null), 503, 'Sochitel catalogue unavailable.');
             return $r['operators'];
         };
-        return $fresh ? $load() : Cache::remember('sochitel-operators-' . $this->verificationHash($s), 300, $load);
+        return $fresh ? $load() : Cache::remember('sochitel-operators-' . $this->verificationHash($s).'-'.md5(json_encode($filters)), 300, $load);
     }
 
     private function supported(array $p, string $type): bool
     {
-        if ((string) ($p['type'] ?? '') !== ($type === 'data' ? '4' : '1')) return false;
-        // These screens collect a phone number only. Never sell products requiring other inputs.
+        if ($type === 'internet') {
+            if (!in_array((string)($p['type'] ?? ''), ['3','4'], true) || (int)($p['category'] ?? 0) !== 6) return false;
+        } elseif ((string) ($p['type'] ?? '') !== ($type === 'data' ? '4' : '1')) return false;
+        // These screens collect only the recipient. Exclude products requiring additional inputs.
         foreach ((array) ($p['extraParameters'] ?? []) as $extra) {
             if (is_array($extra) && !empty($extra['mandatory'])) return false;
         }
         if (!in_array($p['amount']['type'] ?? '', ['fixed', 'range'], true)) return false;
-        if ($type === 'data' && $p['amount']['type'] !== 'fixed') return false;
+        if (in_array($type, ['data','internet'], true) && $p['amount']['type'] !== 'fixed') return false;
         foreach (['min', 'max'] as $bound) {
             foreach (['operator', 'user'] as $currency) {
                 $value = $p['amount'][$bound][$currency] ?? null;
@@ -93,12 +102,12 @@ class Sochitel
     {
         $result = [];
         $logos = json_decode($s->sochitel_logos ?? '{}', true) ?: [];
-        foreach ($this->operators($s, $fresh) as $o) {
+        foreach ($this->operators($s, $fresh, $this->protocol($s) === 'artx' ? ['country' => $country] + ($type === 'internet' ? ['productCategory' => '6.0'] : ['productType' => $type === 'data' ? 4 : 1]) : []) as $o) {
             if (($o['country'] ?? '') !== $country || !ctype_digit((string) ($o['id'] ?? ''))) continue;
             $products = array_values(array_filter($o['products'] ?? [], fn($p) => $this->supported($p, $type)));
             $logo = $logos[$o['id']] ?? null;
             $base = ['name' => $o['name'], 'logo' => $logo, 'fallback_logo' => null, 'currency' => $o['currency'], 'provider' => 'sochitel'];
-            if ($type === 'data' && $products) {
+            if (in_array($type, ['data','internet'], true) && $products) {
                 $result[] = $base + ['id' => (int) $o['id'], 'min' => null, 'max' => null, 'plans' => array_map(fn($p) => ['amount' => $p['amount']['min']['operator'], 'name' => $p['name'], 'product_id' => (int) $p['id']], $products), '_operator' => $o['id'], '_products' => $products];
             } elseif ($type === 'airtime') {
                 foreach ($products as $p) {
@@ -140,9 +149,24 @@ class Sochitel
         abort_unless((int) ($r['errno'] ?? -1) === 0 && ($r['currency'] ?? '') === $s->sochitel_currency, 422, 'Sochitel account currency does not match the configured currency.');
         $operators = $this->operators($s, true);
         $count = 0;
-        foreach ($operators as $o) foreach ($o['products'] ?? [] as $p) if ($this->supported($p, 'airtime') || $this->supported($p, 'data')) $count++;
-        abort_unless($count, 422, 'No compatible airtime or fixed data products are enabled on this Sochitel account.');
+        foreach ($operators as $o) foreach ($o['products'] ?? [] as $p) if ($this->supported($p, 'airtime') || $this->supported($p, 'data') || $this->supported($p, 'internet')) $count++;
+        abort_unless($count, 422, 'No compatible airtime, data or Internet products are enabled on this Sochitel account.');
         return ['currency' => $r['currency'], 'balance' => $r['balance'] ?? null, 'products' => $count];
+    }
+
+    public function recipientMatches(array $response, array $payload): bool
+    {
+        $expected = (string)($payload['recipient'] ?? '');
+        if (($response['_protocol'] ?? '') === 'artx' && ($payload['_recipient_kind'] ?? '') !== 'accountId' && str_starts_with($expected, '0')) $expected = '234'.substr($expected, 1);
+        return (string)($response['recipient'] ?? '') === $expected;
+    }
+
+    public function productMatches(array $response, array $payload): bool
+    {
+        // ARTX lookup omits productId; its unique userReference and the remaining
+        // frozen purchase fields must still match before any settlement.
+        if (($response['_protocol'] ?? '') === 'artx' && !empty($response['_lookup']) && !isset($response['product'])) return true;
+        return (string)($response['product'] ?? '') === (string)($payload['product'] ?? '');
     }
 
     public function outcome(array $r): ?string
@@ -153,6 +177,14 @@ class Sochitel
         $code = (int) $code;
         // 59 is described as type 2 in the appendix but explicitly remains pending in the lifecycle.
         if (in_array($code, [9, 46, 59], true)) return null;
+        if (($r['_protocol'] ?? '') === 'artx') {
+            if (empty($r['_lookup']) && ($r['simulation'] ?? null) !== false) return null;
+            if (($r['simulation'] ?? false) || ($r['errno'] ?? -1) != 0 && !empty($r['_lookup'])) return null;
+            if ($code === 0) return 'success';
+            // Unknown errors and missing/duplicate references require reconciliation.
+            if (in_array($code, [1,14,22,48,50,69,70,71,78], true)) return null;
+            return in_array($code, [2,3,4,6,7,8,11,12,13,15,19,20,24,25,27,29,32,34,35,36,37,39,41,42,43,47,52,53,56,57,58,60,61,63,65,66,67,68,72,73,74,75,76,77], true) && (int)($status['type'] ?? -1) === 2 ? 'reversed' : null;
+        }
         if ($code === 0) return 'success';
         $failures = [1,2,3,4,6,7,8,13,14,15,20,24,27,29,32,35,36,37,39,41,42,43,48,50,53,56,57,58,60,61,63,65,66,67,68,70,71,72,73,74,75,76,77];
         return in_array($code, $failures, true) ? 'reversed' : null;

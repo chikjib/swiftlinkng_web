@@ -50,7 +50,7 @@ class InternetService
             }
             abort_unless(in_array($key,['spectranet','nitel'],true),422,'Select an Internet provider.');
             $plans = [];
-            foreach (app(Sochitel::class)->catalog($s,'NG','data',true) as $o) {
+            foreach (app(Sochitel::class)->catalog($s,'NG',app(Sochitel::class)->protocol($s)==='artx'?'internet':'data',true) as $o) {
                 $name = strtolower($o['name']);
                 if ($key === 'spectranet' ? !str_contains($name,'spectranet') : !preg_match('/\b(nitel|ntel)\b/',$name)) continue;
                 foreach ($o['_products'] as $p) {
@@ -61,7 +61,7 @@ class InternetService
                     abort_unless($rate>0,503,'Configure the Sochitel conversion to NGN.');
                     $cost=round((float)$p['amount']['min']['user']*$rate,2);
                     $amount = (int)ceil(InternationalTopup::price($cost,$s->multiplier)/100);
-                    $plans[] = ['plan'=>$o['id'].':'.$p['id'],'name'=>$p['name'],'amount'=>$amount,'cost'=>$cost,'payload'=>['operator'=>(string)$o['_operator'],'product'=>(string)$p['id'],'currency'=>$o['currency'],'amount'=>(string)$p['amount']['min']['operator']]];
+                    $plans[] = ['plan'=>$o['id'].':'.$p['id'],'name'=>$p['name'],'amount'=>$amount,'cost'=>$cost,'payload'=>['operator'=>(string)$o['_operator'],'product'=>(string)$p['id'],'currency'=>$o['currency'],'amount'=>(string)$p['amount']['min']['operator'], '_recipient_kind'=>(string)$p['type']==='3'?'accountId':'msisdn']];
                 }
             }
             return $plans;
@@ -109,6 +109,7 @@ class InternetService
             $s=app(InternationalTopup::class)->settings();
             abort_unless(($payload['_account']??'')===app(Sochitel::class)->account($s),503,'Provider account changed.');
             unset($payload['_account']);
+            if (app(Sochitel::class)->protocol($s)!=='artx') unset($payload['_recipient_kind']);
             return app(Sochitel::class)->request($s,'POST','/transaction',$payload);
         }
         return Http::withHeaders(['api-key'=>config('app.vtpassApiKey'),'secret-key'=>config('app.vtpassSecretKey')])->connectTimeout(10)->timeout(50)->post(rtrim(config('app.vtPassBaseUrl'),'/').'/pay',$payload)->json() ?? [];
@@ -129,10 +130,10 @@ class InternetService
         $outcome=self::vtpassOutcome($response);
         if ($row->provider==='sochitel') {
             $p=json_decode($row->payload,true);
-            $matches=!empty($response['id'])
-                && (string)($response['reference']??'')===$row->reference
-                && (string)($response['recipient']??'')===($p['recipient']??'')
-                && (string)($response['product']??'')===($p['product']??'')
+            $matches=!empty($response['id']) && ctype_digit((string)$response['id'])
+                && strcasecmp((string)($response['reference']??''),$row->reference)===0
+                && app(Sochitel::class)->recipientMatches($response, $p)
+                && app(Sochitel::class)->productMatches($response, $p)
                 && (string)($response['operator']['id']??'')===($p['operator']??'')
                 && ($response['operator']['currency']??'')===($p['currency']??'')
                 && is_numeric($response['amount']['operator']??null)
@@ -153,6 +154,7 @@ class InternetService
                     }
                 }
                 $order->status=$outcome==='success'?1:2;
+                if ($outcome==='success' && is_string($response['instructions'] ?? null) && $response['instructions']!=='') $order->description.=' — '.$response['instructions'];
                 $order->response=json_encode($response); $order->save();
                 if ($outcome==='success') RewardService::processSuccessfulOrder($order);
             }

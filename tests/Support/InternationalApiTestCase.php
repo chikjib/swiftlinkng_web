@@ -49,6 +49,7 @@ abstract class InternationalApiTestCase extends TestCase
         });
         (require database_path('migrations/2026_10_11_000001_create_international_topups.php'))->up();
         (require database_path('migrations/2026_10_17_000001_add_sochitel_international_provider.php'))->up();
+        (require database_path('migrations/2026_10_19_000001_add_sochitel_artx_protocol.php'))->up();
         config(['international.api_key' => 'test-key']);
         Http::preventStrayRequests();
     }

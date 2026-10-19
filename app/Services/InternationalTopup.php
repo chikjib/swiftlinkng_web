@@ -222,7 +222,7 @@ class InternationalTopup
                 $r = app(Sochitel::class)->request($s, 'POST', '/transaction', $payload + ['recipient' => $q->recipient_number, 'amount' => (string) $q->local_amount, 'reference' => $row->reference]);
                 // These documented request rejections create no transaction. Duplicate references
                 // and ambiguous server errors must instead be recovered by reference lookup.
-                if (empty($r['id']) && in_array((int) ($r['errno'] ?? -1), [17,101,102,105,106,107,108,109,110,111], true)) {
+                if (app(Sochitel::class)->protocol($s) === 'rest' && empty($r['id']) && in_array((int) ($r['errno'] ?? -1), [17,101,102,105,106,107,108,109,110,111], true)) {
                     DB::table('international_purchases')->where('id', $row->id)->update(['details' => json_encode(['rejection_code' => (int) $r['errno']])]);
                     return $this->settle($row, 'reversed');
                 }
@@ -271,10 +271,10 @@ class InternationalTopup
     {
         // Match the provider response against the exact frozen product and payment.
         $payload = json_decode($q->provider_payload ?? '{}', true);
-        if (empty($r['id']) || !ctype_digit((string) $r['id']) ||
+        if ((!empty($row->transaction_id) && (string)$row->transaction_id !== (string)($r['id'] ?? '')) || empty($r['id']) || !ctype_digit((string) $r['id']) ||
             strcasecmp((string) ($r['reference'] ?? ''), $row->reference) !== 0 ||
             (string) ($r['recipient'] ?? '') !== $q->recipient_number ||
-            (string) ($r['product'] ?? '') !== ($payload['product'] ?? '') ||
+            !app(Sochitel::class)->productMatches($r, $payload) ||
             (string) ($r['operator']['id'] ?? '') !== ($payload['operator'] ?? '') ||
             ($r['operator']['currency'] ?? '') !== ($payload['currency'] ?? '') ||
             !is_numeric($r['amount']['operator'] ?? null) ||

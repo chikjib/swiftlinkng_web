@@ -33,6 +33,8 @@ class InternetController extends BaseController {
         }
         $row=$service->purchase($this->user,$in);
         $message=['success'=>'Internet purchase successful.','reversed'=>'Internet purchase failed. Your wallet has been refunded.','pending'=>'Internet purchase is pending. Check Transactions before trying again.'][$row->status];
+        $instructions=json_decode($row->response ?? '{}',true)['instructions'] ?? '';
+        if ($row->status==='success' && is_string($instructions) && $instructions!=='') $message.=' '.$instructions;
         return response()->json(['success'=>$row->status!=='reversed','status'=>$row->status,'transaction_reference'=>$row->reference,'message'=>$message,'amount'=>(float)\App\Models\Order::findOrFail($row->order_id)->amount],$row->status==='reversed'?422:200);
     }
 }

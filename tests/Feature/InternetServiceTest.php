@@ -21,7 +21,8 @@ class InternetServiceTest extends \Tests\Support\InternationalApiTestCase
             $t->id();
             foreach (['ref','custom_reference','plan','phone','channel','description','api_route','response'] as $f) $t->text($f)->nullable();
             foreach (['user_id','subcategory_id','quantity','status'] as $f) $t->integer($f);
-            foreach (['amount','subtotal','total','prev_bal','bal','cost_price'] as $f) $t->decimal($f,16,2);
+            foreach (['amount','subtotal','total','prev_bal','bal'] as $f) $t->decimal($f,16,2);
+            $t->decimal('cost_price',16,2)->nullable();
             $t->timestamps();
         });
         Schema::create('refund_logs', function(Blueprint $t) { $t->id(); $t->string('ref'); $t->integer('order_id'); $t->integer('user_id'); $t->decimal('credited_amount',16,2); $t->timestamps(); });
@@ -78,7 +79,7 @@ class InternetServiceTest extends \Tests\Support\InternationalApiTestCase
     public function test_sochitel_domestic_catalogue_keeps_spectranet_and_nitel_separate(): void
     {
         config(['international.sochitel_base_url'=>'https://sochitel.test/api']);
-        DB::table('international_settings')->update(['sochitel_user_id'=>'123','sochitel_private_key'=>Crypt::encryptString(F::keys()['private']),'sochitel_currency'=>'NGN','multiplier'=>1.03]);
+        DB::table('international_settings')->update(['sochitel_protocol'=>'rest','sochitel_user_id'=>'123','sochitel_private_key'=>Crypt::encryptString(F::keys()['private']),'sochitel_currency'=>'NGN','multiplier'=>1.03]);
         $o=F::operators()[1]; $o['name']='Spectranet'; $o['products'][0]['amount']['min']['user']='450'; $o['products'][0]['amount']['max']['user']='450';
         $ntel=$o; $ntel['id']='9'; $ntel['name']='ntel';
         Http::fake(['*'=>Http::response(['errno'=>0,'operators'=>[$o,$ntel]])]);

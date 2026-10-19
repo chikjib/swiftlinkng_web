@@ -13,10 +13,19 @@
    <label class="sl-field">API key / international code<input class="sl-input" type="password" v-model="apiKey" autocomplete="new-password" placeholder="Leave blank to keep the saved key"></label>
    <p>{{ settings.api_key_configured?'API key configured':'API key required before enabling VTUgate' }}.</p>
    <h2>Sochitel</h2>
+   <label class="sl-field">Sochitel protocol<select class="sl-input" v-model="settings.sochitel_protocol"><option value="artx">ARTX 5.9.6 (JSON commands)</option><option value="rest">Existing REST / RSA account</option></select></label>
+   <template v-if="settings.sochitel_protocol==='artx'">
+    <p>{{ settings.sochitel_artx_url_configured?'ARTX URL configured.':'Set SOCHITEL_ARTX_URL to the HTTPS endpoint assigned by Sochitel.' }}</p>
+    <label class="sl-field">ARTX username<input class="sl-input" v-model="settings.sochitel_username" autocomplete="off"></label>
+    <label class="sl-field">ARTX password<input class="sl-input" type="password" v-model="sochitelPassword" autocomplete="new-password" placeholder="Leave blank to keep the saved password"></label>
+    <p>{{ settings.sochitel_password_configured?'Encrypted password saved.':'Password required.' }} If your account requires mutual TLS, configure SOCHITEL_ARTX_CERTIFICATE and SOCHITEL_ARTX_SSL_KEY on the server.</p>
+   </template>
+   <template v-else>
    <p>{{ settings.sochitel_base_url_configured?'API URL configured on server.':'Set SOCHITEL_BASE_URL on the server to the API URL assigned by Sochitel.' }}</p>
    <label class="sl-field">Account user ID<input class="sl-input" v-model="settings.sochitel_user_id" inputmode="numeric" pattern="[0-9]+"></label>
    <label class="sl-field">RSA private key<textarea class="sl-input" v-model="sochitelKey" rows="4" autocomplete="off" spellcheck="false" placeholder="Paste the 4096-bit private key; leave blank to keep the saved key"></textarea></label>
    <p>Upload the matching public certificate in the <a href="https://clientportal.sochitel.com/business/settings/rsakeysconfig.html" target="_blank" rel="noopener noreferrer">Sochitel portal</a>. Both providers’ secrets are saved encrypted and never returned here. {{ settings.sochitel_key_configured?'Sochitel private key saved.':'' }}</p>
+   </template>
    <label class="sl-field">Sochitel account currency<input class="sl-input" v-model="settings.sochitel_currency" pattern="[A-Z]{3}" maxlength="3" required placeholder="NGN"></label>
    <label v-if="settings.sochitel_currency!=='NGN'" class="sl-field">NGN per 1 {{ settings.sochitel_currency }}<input class="sl-input" type="number" min="0.000001" max="1000000" step="0.000001" v-model="settings.sochitel_ngn_rate" required></label>
    <p v-if="settings.sochitel_currency!=='NGN'">Sochitel account cost × this exchange rate × multiplier = amount charged in NGN. Keep this rate current.</p>
@@ -41,7 +50,7 @@
 import axios from 'axios';
 import './service-ui.css';
 export default {
- data(){return {settings:null,codes:[],logos:[],apiKey:'',sochitelKey:'',busy:false,message:'',saved:false,testMessage:'',testSuccess:false,transactions:{data:[]},resolving:null,evidence:'',outcome:''};},
+ data(){return {settings:null,codes:[],logos:[],apiKey:'',sochitelKey:'',sochitelPassword:'',busy:false,message:'',saved:false,testMessage:'',testSuccess:false,transactions:{data:[]},resolving:null,evidence:'',outcome:''};},
  async mounted(){try{await this.settingsLoad();}catch(e){this.message=this.error(e);}await this.load();},
  methods:{
   error(e){this.saved=false;return e.response?.data?.message||'Request failed.';},
@@ -49,8 +58,8 @@ export default {
   async save(){this.busy=true;this.saved=false;this.message='';this.testMessage='';try{
    if(new Set(this.codes.map(c=>c.iso)).size!==this.codes.length)throw new Error('Duplicate country code');
    if(new Set(this.logos.map(c=>c.id)).size!==this.logos.length)throw new Error('Duplicate operator ID');
-   this.settings=(await axios.put('/api/admin/international/settings',{enabled:this.settings.enabled,provider:this.settings.provider,multiplier:String(this.settings.multiplier),calling_codes:Object.fromEntries(this.codes.map(c=>[c.iso,c.code])),api_key:this.apiKey||null,sochitel_user_id:this.settings.sochitel_user_id||null,sochitel_private_key:this.sochitelKey||null,sochitel_currency:this.settings.sochitel_currency,sochitel_ngn_rate:String(this.settings.sochitel_ngn_rate),sochitel_logos:Object.fromEntries(this.logos.map(c=>[c.id,c.url]))})).data.data;
-   this.apiKey='';this.sochitelKey='';this.message='International settings saved.';this.saved=true;
+   this.settings=(await axios.put('/api/admin/international/settings',{enabled:this.settings.enabled,provider:this.settings.provider,multiplier:String(this.settings.multiplier),calling_codes:Object.fromEntries(this.codes.map(c=>[c.iso,c.code])),api_key:this.apiKey||null,sochitel_protocol:this.settings.sochitel_protocol,sochitel_username:this.settings.sochitel_username||null,sochitel_password:this.sochitelPassword||null,sochitel_user_id:this.settings.sochitel_user_id||null,sochitel_private_key:this.sochitelKey||null,sochitel_currency:this.settings.sochitel_currency,sochitel_ngn_rate:String(this.settings.sochitel_ngn_rate),sochitel_logos:Object.fromEntries(this.logos.map(c=>[c.id,c.url]))})).data.data;
+   this.apiKey='';this.sochitelKey='';this.sochitelPassword='';this.message='International settings saved.';this.saved=true;
   }catch(e){this.message=e.message?.startsWith('Duplicate ')?e.message:this.error(e);}finally{this.busy=false;}},
   async testConnection(){this.busy=true;this.testMessage='';this.testSuccess=false;try{const result=(await axios.post('/api/admin/international/sochitel/test')).data.data;this.settings.sochitel_verified=true;this.testMessage=`Connection verified. ${result.products} compatible products. Account currency: ${result.currency}. Balance: ${result.balance??'unavailable'}.`;this.testSuccess=true;}catch(e){this.testMessage=this.error(e);}finally{this.busy=false;}},
   async load(page=1){try{this.transactions=(await axios.get('/api/admin/international/transactions',{params:{page:typeof page==='number'?page:1}})).data.data;}catch(e){this.message=this.error(e);}},

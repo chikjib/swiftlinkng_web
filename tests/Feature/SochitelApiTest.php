@@ -20,7 +20,7 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
     {
         parent::setUp();
         config(['international.sochitel_base_url' => 'https://sochitel.test/api']);
-        DB::table('international_settings')->update(['enabled' => true, 'provider' => 'sochitel', 'sochitel_user_id' => '123456', 'sochitel_private_key' => Crypt::encryptString(F::keys()['private']), 'sochitel_currency' => 'USD', 'sochitel_ngn_rate' => 1500]);
+        DB::table('international_settings')->update(['enabled' => true, 'provider' => 'sochitel', 'sochitel_protocol' => 'rest', 'sochitel_user_id' => '123456', 'sochitel_private_key' => Crypt::encryptString(F::keys()['private']), 'sochitel_currency' => 'USD', 'sochitel_ngn_rate' => 1500]);
         Schema::create('orders', function (Blueprint $t) {
             $t->id();
             foreach (['ref', 'plan', 'phone', 'channel', 'description'] as $f) $t->string($f);
@@ -196,7 +196,7 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
     public function test_saving_sochitel_key_encrypts_it_and_preserves_it_when_blank(): void
     {
         $this->login(1);
-        $body = ['enabled' => false, 'provider' => 'vtugate', 'multiplier' => '1.03', 'calling_codes' => [], 'sochitel_private_key' => F::keys()['private'], 'sochitel_user_id' => '123456', 'sochitel_currency' => 'USD', 'sochitel_ngn_rate' => '1500'];
+        $body = ['enabled' => false, 'provider' => 'vtugate', 'multiplier' => '1.03', 'calling_codes' => [], 'sochitel_private_key' => F::keys()['private'], 'sochitel_protocol' => 'rest', 'sochitel_user_id' => '123456', 'sochitel_currency' => 'USD', 'sochitel_ngn_rate' => '1500'];
         $this->putJson('/api/admin/international/settings', $body)->assertOk()->assertJsonPath('data.sochitel_key_configured', true)->assertJsonMissingPath('data.sochitel_private_key');
         $encrypted = DB::table('international_settings')->value('sochitel_private_key');
         $this->assertNotSame(F::keys()['private'], $encrypted);
