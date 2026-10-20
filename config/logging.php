@@ -48,6 +48,14 @@ return [
     */
 
     'channels' => [
+        'payment_responses' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payment-responses.log'),
+            'level' => 'info',
+            'days' => 14,
+            'permission' => 0660,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],

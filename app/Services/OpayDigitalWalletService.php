@@ -200,6 +200,11 @@ class OpayDigitalWalletService
             ]);
         }
 
+        PaymentResponseLogger::record('provider_decrypted_response', [
+            'provider' => 'opay', 'operation' => $path,
+            'http_status' => $response->status(), 'response' => $data,
+        ]);
+
         // OPay wraps the business response inside the decrypted payload's
         // own code/message/data envelope. Expose the inner data consistently
         // to controllers (for example, data.depositCode when creating a wallet).

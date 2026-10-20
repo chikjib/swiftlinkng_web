@@ -29,6 +29,22 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Capture every provider response made during a payment/account request.
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Http\Client\Events\ResponseReceived::class, function ($event) {
+            if (!\App\Services\PaymentResponseLogger::active()) return;
+            \App\Services\PaymentResponseLogger::record('provider_response', array_merge([
+                'provider' => parse_url($event->request->url(), PHP_URL_HOST),
+                'operation' => parse_url($event->request->url(), PHP_URL_PATH),
+                'http_status' => $event->response->status(),
+            ], \App\Services\PaymentResponseLogger::body($event->response->body())));
+        });
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Http\Client\Events\ConnectionFailed::class, function ($event) {
+            if (!\App\Services\PaymentResponseLogger::active()) return;
+            \App\Services\PaymentResponseLogger::record('provider_connection_failed', [
+                'provider' => parse_url($event->request->url(), PHP_URL_HOST),
+                'operation' => parse_url($event->request->url(), PHP_URL_PATH),
+            ]);
+        });
         //
 
         if (App::environment('production', 'staging')) {

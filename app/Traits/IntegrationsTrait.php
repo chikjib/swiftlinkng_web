@@ -1650,7 +1650,7 @@ public function generateNonceStr($length = 32)
     public function sha1_with_rsa(string $encry_data, string $private_key): string {
         // Retrieve the private key resource
         $privateKey = $this->validate_rsa_key($private_key, 'private');
-        \Log::info($private_key);
+        // Never log the merchant signing key.
         // Sign the data using the private key and SHA-1 algorithm
         openssl_sign($encry_data, $signature, $privateKey, OPENSSL_ALGO_SHA1);
         //encode the signature in base64 and return it

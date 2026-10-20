@@ -140,6 +140,7 @@ class User extends Authenticatable
             ));
 
             $response = curl_exec($curl);
+            \App\Services\PaymentResponseLogger::curl('rehoboth', 'create_account', $curl, $response);
 
             curl_close($curl);
             $response = curl_exec($curl);
@@ -232,6 +233,7 @@ class User extends Authenticatable
         ));
 
         $response = curl_exec($curl);
+        \App\Services\PaymentResponseLogger::curl('monnify', 'create_reserved_account', $curl, $response);
 
         curl_close($curl);
         $response = curl_exec($curl);
@@ -261,6 +263,7 @@ class User extends Authenticatable
         ));
 
         $response = curl_exec($curl);
+        \App\Services\PaymentResponseLogger::curl('monnify', 'get_reserved_account', $curl, $response);
         curl_close($curl);
         $result = json_decode($response);
         // return $result;
@@ -391,6 +394,7 @@ class User extends Authenticatable
         ));
 
         $response = curl_exec($curl);
+        \App\Services\PaymentResponseLogger::curl('rehoboth', 'authenticate', $curl, $response);
 
         curl_close($curl);
         // echo $response;
