@@ -74,6 +74,24 @@ class User extends Authenticatable
     ];
 
 
+    public function getBvnAttribute($value)
+    {
+        return $this->identityValue($value);
+    }
+
+    public function getNinAttribute($value)
+    {
+        return $this->identityValue($value);
+    }
+
+    private function identityValue($value)
+    {
+        if ($value === null || in_array(strtolower(trim((string) $value)), ['', 'null', 'undefined'], true)) {
+            return null;
+        }
+        return $value;
+    }
+
     public function order()
     {
         return $this->hasMany(Order::class);

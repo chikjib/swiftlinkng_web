@@ -1117,16 +1117,53 @@ $user = auth()->user();
         return $result;
     }
     
-    public function generatePalmpay($bvn,$cac = null)
+    public function generatePalmpay($identityNumber, $cac = null, $identityType = 'personal')
     {
         $customer_name = $this->user->firstname ." ". $this->user->lastname;
-        $cac_or_bvn = !is_null($this->user->bvn) ? $bvn : $cac = "BN000000";
-        $result = $this->palmPay($this->referenceCode(), $customer_name, $this->user->email, $cac_or_bvn);
-        \Log::info($result);
-        return $result;
+        return $this->palmPay($this->referenceCode(), $customer_name, $this->user->email, $identityNumber, $identityType);
     }
-    
-   
+
+    private function createPalmpayReservedAccount(User $user)
+    {
+        if (!blank($user->palmpay_reserved_acct)) {
+            return $this->sendResponse(new UserResource($user), 'PalmPay account retrieved successfully.');
+        }
+        $hasBvn = !blank($user->bvn) && strtolower(trim($user->bvn)) !== 'null';
+        $hasNin = !blank($user->nin) && strtolower(trim($user->nin)) !== 'null';
+        if (!$hasBvn && !$hasNin) {
+            return $this->sendError('Verification Required', 'Add your BVN or NIN to create your PalmPay account.', 422);
+        }
+        $identityType = $hasBvn ? 'personal' : 'personal_nin';
+        $identityNumber = openssl_decrypt($hasBvn ? $user->bvn : $user->nin,
+            'AES-128-CTR', 'SWIFtlInk1nG', 0, 'SWiftLiNknG89101');
+        if (!is_string($identityNumber) || !preg_match('/^[0-9]{11}$/', $identityNumber)) {
+            return $this->sendError('Verification Required', 'Your saved identity could not be read. Please verify your BVN or NIN again.', 422);
+        }
+        try {
+            $result = $this->generatePalmpay($identityNumber, null, $identityType);
+            $code = (string) ($result['respCode'] ?? '');
+            $account = $result['data'] ?? [];
+            if ($code !== '00000000' || ($result['status'] ?? true) === false
+                || blank($account['virtualAccountNo'] ?? null) || blank($account['virtualAccountName'] ?? null)) {
+                return $this->sendError('PalmPay could not create your account. Please try again later.', [], 502);
+            }
+            $user->palmpay_reserved_acct = json_encode([
+                'bankCode' => '', 'bankName' => 'PalmPay',
+                'accountNumber' => (string) $account['virtualAccountNo'],
+                'accountName' => (string) $account['virtualAccountName'],
+            ]);
+            $user->palmpay_account = (string) $account['virtualAccountNo'];
+            $user->save();
+            return $this->sendResponse(new UserResource($user), 'PalmPay account created successfully.');
+        } catch (\Throwable $e) {
+            \App\Services\PaymentResponseLogger::record('exception', [
+                'provider' => 'palmpay', 'exception' => get_class($e), 'message' => $e->getMessage(),
+            ]);
+            return $this->sendError('PalmPay account creation is unavailable right now. Please try again later.', [], 502);
+        }
+    }
+
+
     // public function generate_reserved_account(Request $request)
     // {
 
@@ -1257,6 +1294,9 @@ $user = auth()->user();
         $bank = $request->bank;
         // \Log::info($bank);
         $user =  User::find($this->user->id);
+        if ($bank === 'palmpay') {
+            return $this->createPalmpayReservedAccount($user);
+        }
 
         if(!is_null($this->user->bvn) && is_null($this->user->nin)){
             $bvn=openssl_decrypt($this->user->bvn, "AES-128-CTR",
@@ -1347,18 +1387,6 @@ $user = auth()->user();
 
                 $user->save();
                 return $this->sendResponse(new UserResource($user), 'User account reserved successfully.');
-            }elseif($bank == "palmpay"){
-                $palmpay = $this->generatePalmpay($bvn);
-
-                if($palmpay['respMsg'] == "success" && $palmpay['respCode'] == "00000000" && $palmpay['status'] == true){
-                    $palmpay_account = array("bankCode" => "", "bankName" => "Palmpay", "accountNumber" => $palmpay['data']['virtualAccountNo'], "accountName" => $palmpay['data']['virtualAccountName']);
-                    $user->palmpay_reserved_acct = json_encode($palmpay_account);
-                    $user->palmpay_account = $palmpay['data']['virtualAccountNo'];
-                    $user->save();
-                    return $this->sendResponse(new UserResource($user), 'User account reserved successfully.');
-                }else{
-                    return $this->sendError('Error occurred creating reserved account. Try Again later', 'Error occurred creating reserved account. Try Again later');
-                }
             }
         }elseif(!is_null($this->user->nin) && is_null($this->user->bvn)){
             $nin=openssl_decrypt($this->user->nin, "AES-128-CTR",
@@ -1605,18 +1633,6 @@ $user = auth()->user();
 
                 $user->save();
                 return $this->sendResponse(new UserResource($user), 'User account reserved successfully.');
-            }elseif($bank == "palmpay"){
-                $palmpay = $this->generatePalmpay($bvn);
-
-                if($palmpay['respMsg'] == "success" && $palmpay['respCode'] == "00000000" && $palmpay['status'] == true){
-                    $palmpay_account = array("bankCode" => "", "bankName" => "Palmpay", "accountNumber" => $palmpay['data']['virtualAccountNo'], "accountName" => $palmpay['data']['virtualAccountName']);
-                    $user->palmpay_reserved_acct = json_encode($palmpay_account);
-                    $user->palmpay_account = $palmpay['data']['virtualAccountNo'];
-                    $user->save();
-                    return $this->sendResponse(new UserResource($user), 'User account reserved successfully.');
-                }else{
-                    return $this->sendError('Error occurred creating reserved account. Try Again later', 'Error occurred creating reserved account. Try Again later');
-                }
             }
         }
 

@@ -63,7 +63,7 @@ export default {
     personalAccounts() {
       return [
         { key: "opay", label: "OPay", recommended: true, charge: "Lowest Charge: 0.4%", example: "Transfer ₦1,000 → ₦996 credited", verification: "BVN or NIN required", data: this.home.opay_reserved_acct },
-        { key: "palmpay", label: "PalmPay", charge: "Charge: 0.5%", example: "Transfer ₦1,000 → ₦995 credited", verification: "BVN required", data: this.home.palmpay_reserved_acct },
+        { key: "palmpay", label: "PalmPay", charge: "Charge: 0.5%", example: "Transfer ₦1,000 → ₦995 credited", verification: "BVN or NIN required", data: this.home.palmpay_reserved_acct },
         { key: "moniepoint", label: "Moniepoint", charge: "Charge: 0.85%", example: "Transfer ₦1,000 → ₦991.50 credited", verification: "BVN or NIN required", data: this.home.moniepoint_reserved_acct },
       ];
     },

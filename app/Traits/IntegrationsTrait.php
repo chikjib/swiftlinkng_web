@@ -1710,12 +1710,12 @@ public function generateNonceStr($length = 32)
         return $signature;
     }
 
-    public function palmPay($reference, $customer_name, $email, $licenseNumber)
+    public function palmPay($reference, $customer_name, $email, $licenseNumber, $identityType = 'personal')
     {
         $private_key = config('app.palmPayPrivateKey');
 
         $payload = array(
-            "identityType" => "personal",
+            "identityType" => $identityType,
             "licenseNumber" => $licenseNumber,
             "virtualAccountName" => $customer_name,
             "customerName" => $customer_name,

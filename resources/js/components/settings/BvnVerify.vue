@@ -5,7 +5,7 @@
             <br/>
           <h4 class="card-title">Form of Identification</h4>
           <hr />
-          <div v-if="users.bvn ==null">
+          <div v-if="!hasIdentity(users.bvn)">
           <p>
             <input
               type="radio"
@@ -74,7 +74,7 @@
             <p class="text-success">BVN Verified!</p>
           </div>
 
-          <div v-if="users.nin == null">
+          <div v-if="!hasIdentity(users.nin)">
           <p>
             <input
               type="radio"
@@ -171,6 +171,9 @@ export default {
   },
 
   methods: {
+    hasIdentity(value) {
+      return value != null && !["", "null", "undefined"].includes(String(value).trim().toLowerCase());
+    },
     showModal: function (id) {
       return this.activeModal === id;
     },
@@ -193,6 +196,7 @@ export default {
         .then((response) => {
           console.log(response.data.data);
           this.users = response.data.data;
+          if (!this.picked) this.picked = !this.hasIdentity(this.users.bvn) ? "bvn" : (!this.hasIdentity(this.users.nin) ? "nin" : "");
         });
     },
 
