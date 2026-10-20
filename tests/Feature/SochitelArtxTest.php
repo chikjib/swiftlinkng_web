@@ -75,6 +75,32 @@ class SochitelArtxTest extends InternetServiceTest
     {
         return ['subcategory_id'=>Subcategory::where('title','Spectranet')->value('id'),'plan_id'=>'7:'.$product,'amount'=>464,'phonenumber'=>'08011111111','request_key'=>'artx-test','channel'=>'App'];
     }
+    public function test_production_endpoint_uses_the_documented_artx_balance_request(): void
+    {
+        config(['international.sochitel_artx_url' => 'https://artxh1.sochitel.com/apiv8']);
+        Http::fake([
+            'https://artxh1.sochitel.com/apiv8' => Http::response([
+                'command' => 'getBalance', 'status' => ['id' => 0],
+                'result' => ['value' => 10000, 'currency' => 'NGN'],
+            ]),
+        ]);
+
+        $result = app(Sochitel::class)->request(app(InternationalTopup::class)->settings(), 'GET', '/balance');
+
+        $this->assertSame(['errno' => 0, 'balance' => 10000, 'currency' => 'NGN'], $result);
+        Http::assertSentCount(1);
+        Http::assertSent(function ($request) {
+            $auth = $request['auth'];
+            return $request->url() === 'https://artxh1.sochitel.com/apiv8'
+                && $request->method() === 'POST'
+                && $request['version'] === 5
+                && $request['command'] === 'getBalance'
+                && $auth['username'] === 'merchant'
+                && strlen($auth['salt']) === 40
+                && $auth['password'] === hash('sha512', $auth['salt'].sha1('testtest'))
+                && $auth['signature'] === hash('sha512', sha1('testtest').$auth['salt'].'getBalance');
+        });
+    }
     public function test_catalogue_uses_separate_commands_and_internet_category_and_verifies_auth(): void
     {
         $this->fakeArtx();

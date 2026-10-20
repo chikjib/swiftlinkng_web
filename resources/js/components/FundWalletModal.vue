@@ -3,7 +3,7 @@
     <modal :show="show" @close="close">
       <div class="card">
         <div class="card-body">
-          <h4 class="card-title">Fund Wallet</h4>
+          <h4 class="card-title">Add Money</h4>
           <form @submit.prevent="addfund" class="forms-sample">
             <div class="form-group">
               <label for="amount">Amount</label>

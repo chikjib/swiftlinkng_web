@@ -93,7 +93,7 @@
                             <p class="swift-wallet-amount">{{ balancesVisible ? `₦${formatNumber(home.balance)}` : '••••••' }}</p>
                         </div>
                         <a href="/dashboard/fund" class="swift-fund-wallet">
-                            <span class="swift-router-content"><span class="swift-fund-plus">+</span><span>Fund Wallet</span></span>
+                            <span class="swift-router-content"><span class="swift-fund-plus">+</span><span>Add Money</span></span>
                         </a>
                     </div>
 
@@ -202,7 +202,7 @@
                                 </div>
                                 <div class="col-auto">
                                     <a class="btn btn-danger" href="javascript:void(0);" data-toggle="modal"
-                                        data-target="#TopupModal">Fund Wallet</a>
+                                        data-target="#TopupModal">Add Money</a>
                                 </div>
                             </div>
 
@@ -663,7 +663,7 @@
                                                                         </div>
                                                                         <div
                                                                             class="h5 mb-0 font-weight-bold text-gray-800">
-                                                                            Fund Wallet Manually
+                                                                            Add Money Manually
                                                                         </div>
                                                                         <!-- <div class="mt-2 mb-0 text-muted text-xs">
                 </div> -->
@@ -942,7 +942,7 @@ export default {
                 eyebrow: 'Updates for You',
                 title: 'OPay wallet funding is now available!',
                 message: 'Enjoy instant funding with low charges.',
-                details: 'OPay wallet funding is now available on Swiftlinkng. Open Fund Wallet, choose My Personal Account and transfer to your OPay account for fast, secure wallet funding.',
+                details: 'OPay wallet funding is now available on Swiftlinkng. Open Add Money, choose My Personal Account and transfer to your OPay account for fast, secure wallet funding.',
                 link: '',
                 enabled: true,
             },
@@ -1136,7 +1136,7 @@ export default {
                     .then(() => {
                         this.isCreatingReserve_opay = false;
                         alert(
-                            "OPay account created successfully. Kindly click Fund Wallet and choose Personal Bank Transfer to view it."
+                            "OPay account created successfully. Kindly click Add Money and choose Personal Bank Transfer to view it."
                         );
                         window.location.href = "/dashboard";
                     })
@@ -1175,7 +1175,7 @@ export default {
                         }
 
                         alert(
-                            "Account created successfully, kindly click on fund wallet, choose bank transfer to see your accounts."
+                            "Account created successfully, kindly click on Add Money, choose bank transfer to see your accounts."
                         );
 
                         //   this.$toasted.show("Kindly wait while we create your account...");
@@ -1240,7 +1240,7 @@ export default {
                         }
 
                         alert(
-                            "Account created successfully, kindly click on fund wallet, choose bank transfer to see your accounts."
+                            "Account created successfully, kindly click on Add Money, choose bank transfer to see your accounts."
                         );
 
                         //   this.$toasted.show("Kindly wait while we create your account...");
@@ -1284,7 +1284,7 @@ export default {
                 })
                 .then(({ data }) => {
                     alert(
-                        "Account regenerated successfully, kindly click on fund wallet, choose bank transfer to see your accounts."
+                        "Account regenerated successfully, kindly click on Add Money, choose bank transfer to see your accounts."
                     );
 
                     window.location.href = "/dashboard";

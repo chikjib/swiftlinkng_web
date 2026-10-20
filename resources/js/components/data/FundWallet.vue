@@ -1,17 +1,17 @@
 <template>
   <main class="swift-service-page">
-    <h1 class="swift-service-heading"><button class="swift-back" type="button" @click="$router.back()"><i class="fas fa-arrow-left"></i></button>Fund Wallet</h1>
-    <section class="swift-fund-hero"><span class="swift-transaction-icon"><i class="fas fa-wallet"></i></span><div><h2>Fund your wallet</h2><p>Choose a secure funding method</p></div><i class="fas fa-shield-alt ml-auto"></i></section>
+    <h1 class="swift-service-heading"><button class="swift-back" type="button" @click="$router.back()"><i class="fas fa-arrow-left"></i></button>Add Money</h1>
+    <section class="swift-fund-hero"><span class="swift-transaction-icon"><i class="fas fa-wallet"></i></span><div><h2>Add money to your wallet</h2><p>Choose a secure funding method</p></div><i class="fas fa-shield-alt ml-auto"></i></section>
     <div v-if="errorflag" class="alert alert-danger swift-alert">{{ errorflag }}</div>
 
     <div class="swift-funding-methods">
       <button class="swift-funding-card" type="button" @click="activeMethod = activeMethod === 'card' ? '' : 'card'"><span class="swift-transaction-icon"><i class="far fa-credit-card"></i></span><span><strong>ATM Card</strong><em>💳 Instant Funding</em><small>Enter amount, review charge &amp; pay securely.</small></span><i class="fas fa-chevron-right"></i></button>
       <form v-if="activeMethod === 'card'" class="swift-service-card swift-form-stack" @submit.prevent="makePayment"><div class="swift-form-group"><label for="fund-amount">Amount</label><div class="swift-field-wrap"><i class="far fa-credit-card"></i><input id="fund-amount" v-model.number="form.amount" required min="100" type="number" class="form-control" placeholder="Enter amount" /></div></div><button class="swift-primary-action" :disabled="loading">{{ loading ? 'Opening secure checkout…' : 'Continue' }}</button></form>
 
-      <button class="swift-funding-card" type="button" @click="activeMethod = activeMethod === 'personal' ? '' : 'personal'"><span class="swift-transaction-icon"><i class="fas fa-university"></i></span><span><strong>My Personal Account <b class="swift-recommended">Recommended</b></strong><em>⚡ Instant Funding</em><small>OPay • PalmPay • Moniepoint — fund anytime.</small></span><i class="fas fa-chevron-right"></i></button>
+      <button class="swift-funding-card" type="button" @click="activeMethod = activeMethod === 'personal' ? '' : 'personal'"><span class="swift-transaction-icon"><i class="fas fa-university"></i></span><span><strong>My Personal Account <b class="swift-recommended">Recommended</b></strong><em>⚡ Instant Funding</em><small>PalmPay • Moniepoint — add money anytime.</small></span><i class="fas fa-chevron-right"></i></button>
       <section v-if="activeMethod === 'personal'" class="swift-personal-accounts">
         <header class="swift-personal-intro">
-          <strong>Fund Your Wallet Instantly</strong>
+          <strong>Add Money Instantly</strong>
           <p>Create a personal bank account, save it and transfer to it anytime. Your wallet is credited automatically.</p>
         </header>
         <article v-for="account in personalAccounts" :key="account.key" class="swift-service-card">
@@ -32,7 +32,7 @@
         </article>
         <template v-if="existingAccounts.length">
           <header class="swift-existing-intro">
-            <strong>Your existing accounts</strong>
+            <strong>Other Existing Banks</strong>
             <p>These older accounts remain available for customers who already created them.</p>
           </header>
           <article v-for="account in existingAccounts" :key="account.key" class="swift-service-card">
@@ -62,13 +62,13 @@ export default {
   computed: {
     personalAccounts() {
       return [
-        { key: "opay", label: "OPay", recommended: true, charge: "Lowest Charge: 0.4%", example: "Transfer ₦1,000 → ₦996 credited", verification: "BVN or NIN required", data: this.home.opay_reserved_acct },
-        { key: "palmpay", label: "PalmPay", charge: "Charge: 0.5%", example: "Transfer ₦1,000 → ₦995 credited", verification: "BVN or NIN required", data: this.home.palmpay_reserved_acct },
+        { key: "palmpay", label: "PalmPay", recommended: true, charge: "Charge: 0.5%", example: "Transfer ₦1,000 → ₦995 credited", verification: "BVN or NIN required", data: this.home.palmpay_reserved_acct },
         { key: "moniepoint", label: "Moniepoint", charge: "Charge: 0.85%", example: "Transfer ₦1,000 → ₦991.50 credited", verification: "BVN or NIN required", data: this.home.moniepoint_reserved_acct },
       ];
     },
     existingAccounts() {
       return [
+        { key: "opay", label: "OPay", data: this.home.opay_reserved_acct },
         { key: "gtbank", label: "GTBank", data: this.home.gtbank_reserved_acct },
         { key: "wema", label: "Wema Bank", data: this.home.wema_reserved_acct },
         { key: "providus", label: "Providus Bank", data: this.home.providus_reserved_acct },

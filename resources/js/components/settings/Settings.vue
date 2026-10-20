@@ -125,7 +125,7 @@ export default {
         eyebrow: "Updates for You",
         title: "OPay wallet funding is now available!",
         message: "Enjoy instant funding with low charges.",
-        details: "OPay wallet funding is now available on Swiftlinkng. Open Fund Wallet, choose My Personal Account and transfer to your OPay account for fast, secure wallet funding.",
+        details: "OPay wallet funding is now available on Swiftlinkng. Open Add Money, choose My Personal Account and transfer to your OPay account for fast, secure wallet funding.",
         link: "",
         enabled: true,
       },

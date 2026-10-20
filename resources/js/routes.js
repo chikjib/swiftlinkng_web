@@ -288,7 +288,7 @@ const routes = [
                 component: fundWallet,
                 meta: {
                     requiresAuth: true,
-                    title: "Fund Wallet",
+                    title: "Add Money",
                 },
             },
 

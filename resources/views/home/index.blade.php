@@ -436,7 +436,7 @@
                                         <span class="insur-three-icon-cardiogram"></span>
                                     </div>
                                     <div class="text-box">
-                                        <p>Fund wallet/buy from bank
+                                        <p>Add Money/buy from bank
                                         </p>
                                     </div>
                                 </div>
@@ -484,7 +484,7 @@
                             <div class="tab active-tab" id="life-insurance">
                                 <div class="get-insurance-four__main-content">
                                     <div class="get-insurance-four__main-content-left">
-                                        <h4 class="get-insurance-four__main-content-title">Fund Wallet</h4>
+                                        <h4 class="get-insurance-four__main-content-title">Add Money</h4>
                                         <p class="get-insurance-four__main-content-text">
                                             We provide the fastest and easiest ways to fund your wallet for
                                             transaction. You can use card payment or transfer to dedicated virtual account.

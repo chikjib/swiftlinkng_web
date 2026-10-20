@@ -16,7 +16,7 @@ class SettingController extends BaseController
         'APP_UPDATE_EYEBROW' => 'Updates for You',
         'APP_UPDATE_TITLE' => 'OPay wallet funding is now available!',
         'APP_UPDATE_MESSAGE' => 'Enjoy instant funding with low charges.',
-        'APP_UPDATE_DETAILS' => 'OPay wallet funding is now available on Swiftlinkng. Open Fund Wallet, choose My Personal Account and transfer to your OPay account for fast, secure wallet funding.',
+        'APP_UPDATE_DETAILS' => 'OPay wallet funding is now available on Swiftlinkng. Open Add Money, choose My Personal Account and transfer to your OPay account for fast, secure wallet funding.',
         'APP_UPDATE_LINK' => '',
         'APP_UPDATE_ENABLED' => '1',
     ];
