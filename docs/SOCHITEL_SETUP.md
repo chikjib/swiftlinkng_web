@@ -30,6 +30,14 @@ The production ARTX handler checked on 2026-10-30 is `https://artxh1.sochitel.co
 
 For an ARTX account requiring mutual TLS, set `SOCHITEL_ARTX_CERTIFICATE` and `SOCHITEL_ARTX_SSL_KEY` to its client certificate/key paths.
 
+## Airtime pricing and empty Internet packages
+
+Airtime minimum and maximum denominations use the exact account-currency prices returned in the catalogue. Interior amounts use a proportional conversion only when the two endpoints agree within currency rounding. If they do not agree, an exact interior price cannot be inferred from this REST catalogue; obtain a supported amount-specific quote mechanism from Sochitel. Do not replace the check with an assumed fee curve. `sochitel.range_quote_unavailable` logs the product and endpoint prices needed to investigate.
+
+ARTX Internet catalogue requests fetch all Nigerian categories, then accept fixed bill-payment bundles in category 6.x and fixed mobile-data bundles in categories 4.x/6.x. Filtering the upstream request to category 6.0 hides providers whose bundles use category 4.x. Variable-amount products and products requiring additional mandatory fields still need a separate purchase flow and are excluded.
+
+An empty Spectranet or Nitel list does not establish whether Sochitel offers that brand. Check the authenticated account's operators/products, then Internet admin provider enablement, package availability and the latest package sync. Account access determines the actual catalogue; public API documentation does not promise those brands. The local `swiftlink_livedata` database checked on 2026-10-30 has no `international_settings` table, so it cannot verify a deployed account's packages.
+
 ## Errors and rate limits
 
 The connection test now has its own limit of five tests per minute. Loading settings, saving settings and Internet admin actions no longer consume that test counter. An actual limit response includes `Retry-After` and a readable retry message. General API and admin limits still apply.

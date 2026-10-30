@@ -126,7 +126,9 @@ class Sochitel
     {
         $result = [];
         $logos = json_decode($s->sochitel_logos ?? '{}', true) ?: [];
-        foreach ($this->operators($s, $fresh, $this->protocol($s) === 'artx' ? ['country' => $country] + ($type === 'internet' ? ['productCategory' => '6.0'] : ['productType' => $type === 'data' ? 4 : 1]) : []) as $o) {
+        // Internet providers also publish mobile bundles under category 4.x.
+        // Fetch both categories, then apply the supported-product checks locally.
+        foreach ($this->operators($s, $fresh, $this->protocol($s) === 'artx' ? ['country' => $country] + ($type === 'internet' ? [] : ['productType' => $type === 'data' ? 4 : 1]) : []) as $o) {
             if (($o['country'] ?? '') !== $country || !ctype_digit((string) ($o['id'] ?? ''))) continue;
             $products = array_values(array_filter($o['products'] ?? [], fn($p) => $this->supported($p, $type)));
             $images = $this->operatorLogos($o, $logos[$o['id']] ?? null);
@@ -180,9 +182,23 @@ class Sochitel
         if ($p['amount']['type'] === 'fixed') abort_unless($amount === $min && $min === $max, 422, 'Select an available plan or denomination.');
         $userMin = (float) $p['amount']['min']['user'];
         $userMax = (float) $p['amount']['max']['user'];
-        // Range endpoints must express the same conversion. Never invent an undocumented fee curve.
-        abort_unless(abs($userMin - round($min * $userMax / $max, 2)) <= 0.01, 503, 'This product has variable pricing and cannot be quoted safely.');
-        $cost = round($amount * $userMax / $max, 2);
+        // The provider explicitly prices both endpoints, even when their rates
+        // differ. Use those exact prices before considering interpolation.
+        if ($amount === $min) {
+            $cost = $userMin;
+        } elseif ($amount === $max) {
+            $cost = $userMax;
+        } else {
+            $proportional = abs($userMin - round($min * $userMax / $max, 2)) <= 0.01;
+            if (!$proportional) Log::warning('sochitel.range_quote_unavailable', [
+                'operator' => $o['_operator'], 'product' => $p['id'],
+                'country' => $in['country_code'], 'amount' => $amount,
+                'operator_min' => $min, 'operator_max' => $max,
+                'user_min' => $userMin, 'user_max' => $userMax,
+            ]);
+            abort_unless($proportional, 503, 'An exact price is unavailable for this amount. Try '. $min .' or '. $max .' '. $o['currency'] .', or select another product.');
+            $cost = round($amount * $userMax / $max, 2);
+        }
         $rate = $s->sochitel_currency === 'NGN' ? 1 : (float) $s->sochitel_ngn_rate;
         abort_unless($rate > 0, 503, 'Configure the Sochitel conversion to NGN.');
         return ['operator' => $o, 'product' => $p, 'cost' => round($cost * $rate, 2), 'currency' => $o['currency'], 'payload' => ['operator' => (string) $o['_operator'], 'product' => (string) $p['id'], 'currency' => $o['currency']]];

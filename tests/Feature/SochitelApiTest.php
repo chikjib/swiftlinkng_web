@@ -172,6 +172,32 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
         DB::table('international_settings')->update(['sochitel_currency' => 'NGN', 'sochitel_ngn_rate' => 2000]);
         $this->postJson('/api/international/preview', $this->input())->assertOk()->assertJsonPath('data.amount_kobo', 412);
     }
+    public function test_nigerian_airtime_uses_explicit_endpoint_prices_when_rates_differ(): void
+    {
+        $operators = F::operators();
+        $operators[1]['products'] = [[
+            'id' => '41', 'name' => 'Nigeria airtime', 'type' => '1', 'category' => '1.0',
+            'amount' => ['type' => 'range',
+                'min' => ['operator' => '100.00', 'user' => '0.10'],
+                'max' => ['operator' => '10000.00', 'user' => '8.00']],
+        ]];
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['errno' => 0, 'operators' => $operators])]);
+        $this->login();
+        $input = array_merge($this->input(), ['country_code' => 'NG', 'operator_id' => 41,
+            'product_id' => null, 'type' => 'airtime', 'amount' => '100', 'phone' => '08012345678']);
+
+        $this->postJson('/api/international/preview', $input)->assertOk()->assertJsonPath('data.amount_kobo', 15450);
+        $quote = app(InternationalTopup::class)->quote(1, $input);
+        $this->assertEquals(150, $quote->provider_price);
+        $this->assertEquals(10000, DB::table('users')->where('id', 1)->value('wallet'));
+        $this->postJson('/api/international/preview', array_replace($input, ['amount' => '10000']))
+            ->assertOk()->assertJsonPath('data.amount_kobo', 1236000);
+        $this->postJson('/api/international/preview', array_replace($input, ['amount' => '500']))
+            ->assertStatus(503)->assertJsonPath('message', 'An exact price is unavailable for this amount. Try 100 or 10000 NGN, or select another product.');
+        Http::assertNotSent(fn ($r) => $r->method() === 'POST');
+    }
     public function test_pending_then_success_uses_original_route_after_admin_switch(): void
     {
         $service = app(InternationalTopup::class);

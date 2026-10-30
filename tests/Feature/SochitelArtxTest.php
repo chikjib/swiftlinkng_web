@@ -120,6 +120,29 @@ class SochitelArtxTest extends InternetServiceTest
         $this->assertSame(2,app(Sochitel::class)->verify(app(InternationalTopup::class)->settings())['products']);
         Http::assertNotSent(fn($r)=>$r['command']==='execTransaction');
     }
+    public function test_internet_fetches_mobile_bundles_without_a_category_six_filter(): void
+    {
+        Http::fake(function ($request) {
+            $this->assertArrayNotHasKey('productCategory', $request->data());
+            $command = $request['command'];
+            if ($command === 'getOperators') {
+                $this->assertSame('NG', $request['country']);
+                $result = [['id' => 7, 'name' => 'NTEL', 'country' => ['id' => 'NG']]];
+            } else {
+                $this->assertSame('getOperatorProducts', $command);
+                $result = ['currency' => ['user' => 'NGN', 'operator' => 'NGN'], 'products' => [[
+                    'id' => 12, 'name' => 'NTEL 10GB', 'productType' => ['id' => 4],
+                    'productCategory' => ['id' => '4.3'], 'priceType' => 'fixed',
+                    'price' => ['operator' => 500, 'user' => 450],
+                ]]];
+            }
+            return Http::response(['command' => $command, 'status' => ['id' => 0], 'result' => $result]);
+        });
+        $plans = app(InternetService::class)->providerPlans('nitel', true);
+        $this->assertSame(['7:12'], array_column($plans, 'plan'));
+        $this->assertSame('NTEL 10GB', $plans[0]['name']);
+        Http::assertSentCount(2);
+    }
     public function test_bill_account_is_not_normalized_and_lookup_uses_nested_status(): void
     {
         $this->fakeArtx(); $service=app(InternetService::class);

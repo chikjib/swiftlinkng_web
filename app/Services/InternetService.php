@@ -22,7 +22,8 @@ class InternetService
                 $key = strtolower(substr($s->description, 9));
                 try {
                     $plans = app(InternetAdmin::class)->apply($key, $this->providerPlans($key, $fresh));
-                    $result[] = ['id'=>$s->id,'title'=>$s->title,'network'=>$key,'status'=>1,'products'=>$plans,'logo'=>$plans[0]['logo'] ?? null,'fallback_logo'=>$plans[0]['fallback_logo'] ?? null];
+                    $result[] = ['id'=>$s->id,'title'=>$s->title,'network'=>$key,'status'=>1,'products'=>$plans,'logo'=>$plans[0]['logo'] ?? null,'fallback_logo'=>$plans[0]['fallback_logo'] ?? null]
+                        + ($plans ? [] : ['message'=>'No enabled packages are available for this provider. Ask support to check the provider catalogue and package settings.']);
                 } catch (\Throwable $e) {
                     Log::warning('internet.catalogue_unavailable', ['provider'=>$key,'error'=>$e->getMessage()]);
                     $result[] = ['id'=>$s->id,'title'=>$s->title,'network'=>$key,'status'=>1,'products'=>[], 'message'=>'Packages are temporarily unavailable. Please try again.'];
