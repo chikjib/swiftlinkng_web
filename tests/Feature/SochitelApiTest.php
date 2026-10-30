@@ -198,6 +198,36 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
             ->assertStatus(503)->assertJsonPath('message', 'An exact price is unavailable for this amount. Try 100 or 10000 NGN, or select another product.');
         Http::assertNotSent(fn ($r) => $r->method() === 'POST');
     }
+    public function test_nigerian_airtime_accepts_one_cent_rounding_difference_for_range_amounts(): void
+    {
+        DB::table('international_settings')->update(['sochitel_currency' => 'NGN']);
+        $operators = F::operators();
+        $operators[1]['products'] = [[
+            'id' => '41', 'name' => 'Nigeria airtime', 'type' => '1', 'category' => '1.0',
+            'amount' => ['type' => 'range',
+                'min' => ['operator' => 5.0, 'user' => 2.37000000000000010658],
+                'max' => ['operator' => 150000.0, 'user' => 70911.55000000000291]],
+        ]];
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['errno' => 0, 'operators' => $operators])]);
+        $this->login();
+        $input = array_merge($this->input(), ['country_code' => 'NG', 'operator_id' => 41,
+            'product_id' => null, 'type' => 'airtime', 'amount' => '100', 'phone' => '08012345678']);
+
+        $this->postJson('/api/international/preview', $input)->assertOk()->assertJsonPath('data.amount_kobo', 4869);
+        $quote = app(InternationalTopup::class)->quote(1, $input);
+        $this->assertEquals(47.27, $quote->provider_price);
+        $this->assertEquals(4869, $quote->amount_kobo);
+        $this->postJson('/api/international/preview', array_replace($input, ['amount' => '5']))
+            ->assertOk()->assertJsonPath('data.amount_kobo', 245);
+        $this->postJson('/api/international/preview', array_replace($input, ['amount' => '4.99']))
+            ->assertUnprocessable();
+        $this->postJson('/api/international/preview', array_replace($input, ['amount' => '150000.01']))
+            ->assertUnprocessable();
+        $this->assertEquals(10000, DB::table('users')->where('id', 1)->value('wallet'));
+        Http::assertNotSent(fn ($r) => $r->method() === 'POST');
+    }
     public function test_pending_then_success_uses_original_route_after_admin_switch(): void
     {
         $service = app(InternationalTopup::class);

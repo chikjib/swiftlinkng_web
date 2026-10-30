@@ -189,7 +189,11 @@ class Sochitel
         } elseif ($amount === $max) {
             $cost = $userMax;
         } else {
-            $proportional = abs($userMin - round($min * $userMax / $max, 2)) <= 0.01;
+            // Compare whole minor units: 2.37 - 2.36 is slightly greater
+            // than 0.01 in binary floating point, despite being one cent.
+            $minimumCents = (int) round($userMin * 100);
+            $convertedMinimumCents = (int) round($min * $userMax / $max * 100);
+            $proportional = abs($minimumCents - $convertedMinimumCents) <= 1;
             if (!$proportional) Log::warning('sochitel.range_quote_unavailable', [
                 'operator' => $o['_operator'], 'product' => $p['id'],
                 'country' => $in['country_code'], 'amount' => $amount,
