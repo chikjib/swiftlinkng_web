@@ -191,7 +191,14 @@ class Sochitel
     public function verify(object $s): array
     {
         $r = $this->request($s, 'GET', '/balance');
-        abort_unless((int) ($r['errno'] ?? -1) === 0 && ($r['currency'] ?? '') === $s->sochitel_currency, 422, 'Sochitel account currency does not match the configured currency.');
+        $currency = $r['currency'] ?? null;
+        if ((int) ($r['errno'] ?? -1) !== 0 || !is_string($currency) || !preg_match('/^[A-Z]{3}$/', $currency)) {
+            throw new SochitelConnectionException('Sochitel balance response did not include a valid account currency. Check the selected API and account configuration.');
+        }
+        if ($currency !== $s->sochitel_currency) {
+            $configured = preg_match('/^[A-Z]{3}$/', (string) $s->sochitel_currency) ? $s->sochitel_currency : 'unset';
+            throw new SochitelConnectionException("Sochitel account currency is {$currency}, but the configured currency is {$configured}. Set Sochitel account currency to {$currency} in International Settings and configure its NGN conversion rate before testing again.");
+        }
         $operators = $this->operators($s, true);
         $count = 0;
         foreach ($operators as $o) foreach ($o['products'] ?? [] as $p) if ($this->supported($p, 'airtime') || $this->supported($p, 'data') || $this->supported($p, 'internet')) $count++;

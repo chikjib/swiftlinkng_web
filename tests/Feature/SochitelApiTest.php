@@ -249,7 +249,8 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
         Http::assertNothingSent();
         $this->login(1);
         DB::table('international_settings')->update(['sochitel_currency' => 'GBP']);
-        $this->postJson('/api/admin/international/sochitel/test')->assertUnprocessable();
+        $this->postJson('/api/admin/international/sochitel/test')->assertUnprocessable()
+            ->assertJsonPath('message', 'Sochitel account currency is USD, but the configured currency is GBP. Set Sochitel account currency to USD in International Settings and configure its NGN conversion rate before testing again.');
         $this->assertNull(DB::table('international_settings')->value('sochitel_verified_at'));
     }
     public function test_definite_request_rejection_refunds_once_but_duplicate_reference_stays_pending(): void
