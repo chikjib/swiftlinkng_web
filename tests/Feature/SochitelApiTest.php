@@ -292,6 +292,30 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
         $this->assertSame($encrypted, DB::table('international_settings')->value('sochitel_private_key'));
         $this->assertStringNotContainsString('PRIVATE KEY', DB::table('service_control_audits')->get()->toJson());
     }
+
+    public function test_key_saved_through_admin_signs_the_connection_test_after_decryption(): void
+    {
+        $this->login(1);
+        $body = ['enabled' => false, 'provider' => 'vtugate', 'multiplier' => '1.03', 'calling_codes' => [], 'sochitel_private_key' => F::keys()['private'], 'sochitel_protocol' => 'rest', 'sochitel_user_id' => '123456', 'sochitel_currency' => 'USD', 'sochitel_ngn_rate' => '1500'];
+        $this->putJson('/api/admin/international/settings', $body)->assertOk();
+        $first = DB::table('international_settings')->value('sochitel_private_key');
+        $this->putJson('/api/admin/international/settings', $body)->assertOk();
+        $second = DB::table('international_settings')->value('sochitel_private_key');
+        $this->assertNotSame($first, $second); // Encryption has a fresh random IV on each save.
+        $this->assertSame(Crypt::decryptString($first), Crypt::decryptString($second));
+
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake(function ($request) {
+            $target = parse_url($request->url(), PHP_URL_PATH);
+            $signing = '(request-target): get '.$target."\nhost: sochitel.test\ndate: ".$request->header('Date')[0]."\nnonce: ".$request->header('Nonce')[0]."\ndigest: ".$request->header('Digest')[0];
+            preg_match('/signature="([^"]+)"/', $request->header('Authorization')[0], $match);
+            $this->assertSame(1, openssl_verify($signing, base64_decode($match[1]), F::keys()['public'], OPENSSL_ALGO_SHA256));
+            return Http::response(['sysErr' => 0, 'response' => str_ends_with($target, '/balance') ? ['balance' => '100.00', 'currency' => 'USD'] : F::operators()]);
+        });
+        $this->postJson('/api/admin/international/sochitel/test')->assertOk()->assertJsonPath('data.currency', 'USD');
+        Http::assertSentCount(2);
+    }
     public function test_unknown_status_and_manual_verification_never_refund(): void
     {
         $provider = app(Sochitel::class);

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\{Cache, Crypt, Http, RateLimiter};
+use Illuminate\Support\Facades\{Cache, Crypt, Http, Log, RateLimiter};
 
 class Sochitel
 {
@@ -52,15 +52,28 @@ class Sochitel
         if (is_array($data) && !array_key_exists('errno', $data) && is_numeric($data['sysErr'] ?? null)) {
             $code = (int) $data['sysErr'];
             $result = $data['response'] ?? [];
-            if ($code === 0 && !is_array($result)) throw SochitelConnectionException::response($r->status());
+            if ($code === 0 && !is_array($result)) throw $this->unrecognizedResponse($r, $data, $path);
             if (!is_array($result)) $result = [];
             if ($path === '/operators' && $code === 0 && array_is_list($result)) $result = ['operators' => $result];
             $data = ['errno' => $code] + $result;
         }
-        if (!is_array($data) || !is_numeric($data['errno'] ?? null)) throw SochitelConnectionException::response($r->status());
+        if (!is_array($data) || !is_numeric($data['errno'] ?? null)) throw $this->unrecognizedResponse($r, $data, $path);
         // Transaction failures can contain a valid transaction ID even on HTTP 4xx.
         if ($path !== '/transaction' && (!$r->successful() || (int) $data['errno'] !== 0)) throw SochitelConnectionException::response($r->status(), (int) $data['errno']);
         return $data;
+    }
+
+    private function unrecognizedResponse(\Illuminate\Http\Client\Response $response, mixed $data, string $path): SochitelConnectionException
+    {
+        // Log structure only: no response values, credentials, balances or signatures.
+        Log::warning('sochitel.rest_response_unrecognized', [
+            'parser' => 'rest-envelope-v2', 'path' => $path, 'http_status' => $response->status(),
+            'content_type' => $response->header('Content-Type'),
+            'json_type' => get_debug_type($data),
+            'json_keys' => is_array($data) ? array_slice(array_keys($data), 0, 20) : [],
+            'response_type' => is_array($data) ? get_debug_type($data['response'] ?? null) : null,
+        ]);
+        return new SochitelConnectionException(SochitelConnectionException::response($response->status())->getMessage().' REST parser v2 expected errno or sysErr/response; see the sochitel.rest_response_unrecognized server log for response structure.');
     }
 
     public function operators(object $s, bool $fresh = false, array $filters = []): array
