@@ -101,6 +101,11 @@ while preparing this upgrade locally.
 - [ ] Enable required extensions for both CLI and web: mbstring, bcmath, curl,
       dom/XML, fileinfo, gd, intl, openssl, PDO/MySQL, sodium, tokenizer, and zip.
       Keep the existing Redis client/extension if Redis is used.
+- [ ] Verify the exact `CPANEL_PHP` executable in the Laravel directory. Enabling
+      modules for a different PHP installation or only the web handler does not
+      enable them for this CLI. The workflow now streams the NEW production
+      dependencies' standalone Composer platform check to that executable
+      before entering maintenance or uploading any application files.
 - [ ] Ensure the PHP web process can read/write existing session files and
       `storage`/`bootstrap/cache`. Check ownership; do not use `chmod 777`.
       Keep Passport private keys readable only by the application account
@@ -189,6 +194,40 @@ before replacing code, preserve the same files, and perform the commands in
 Never execute the preparation/finish scripts against your local development app.
 
 ## 5. Rollback
+
+If Artisan reports `Fruitcake\Cors\CorsServiceProvider` missing after a partial
+upgrade, clear generated bootstrap manifests without booting Laravel. From the
+Laravel directory, using the configured PHP executable:
+
+```bash
+/usr/local/bin/ea-php84 -r 'foreach (["config", "packages", "services", "routes-v7", "events"] as $name) { $path = "bootstrap/cache/$name.php"; if (is_file($path) && !unlink($path)) { exit(1); } }'
+bash scripts/deploy-finish.sh "$PWD" /usr/local/bin/ea-php84
+```
+
+Run the finish command only if the previous upload completed and the application
+is already in maintenance. Otherwise continue the normal workflow after clearing
+the manifests. If the missing provider is explicitly listed in the server's
+`config/app.php`, confirm the correct application directory and upgraded source
+were uploaded. Do not reinstall the obsolete CORS package. The prepare script
+now also clears bootstrap manifests before its first Artisan invocation.
+
+If deployment stopped at the start of `deploy-finish.sh` with missing PHP
+extensions, files have already been uploaded but that attempt has not yet run
+its migrations or secret conversion. Install/enable the named extensions for
+the exact PHP 8.4 CLI and web handler (hosting support may need to do this).
+From the Laravel directory, verify that executable's modules and then resume
+the finish script rather than simply running `artisan up`:
+
+```bash
+/usr/local/bin/ea-php84 -m
+bash scripts/deploy-finish.sh "$PWD" /usr/local/bin/ea-php84
+```
+
+Use your configured `CPANEL_PHP` path if it differs. This resumes the remaining
+checks/migrations/caching and reopens only after they pass. Retain the original
+pre-upgrade backup: restarting the entire workflow may create another archive
+of the partially deployed code. An SSH post-quantum warning is separate from
+a PHP extension error.
 
 Keep cron/workers stopped and the site in maintenance while deciding what to do.
 Record the failed step and whether migrations or `passport:hash` ran.

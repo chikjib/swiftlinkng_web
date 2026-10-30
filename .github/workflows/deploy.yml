@@ -77,6 +77,14 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps
       - run: npm run build
+      - name: Check server PHP extensions before maintenance or upload
+        shell: bash
+        run: |
+          test -s vendor/composer/platform_check.php
+          printf -v command 'cd %q && exec %q' "$CPANEL_PATH" "$CPANEL_PHP"
+          ssh -i "$HOME/.ssh/swiftlink_deploy" -p "$CPANEL_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$CPANEL_USER@$CPANEL_HOST" "$command" < vendor/composer/platform_check.php
       - name: Check server, save code rollback archive, and enable maintenance
         shell: bash
         run: |

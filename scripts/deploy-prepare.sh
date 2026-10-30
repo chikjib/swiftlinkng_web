@@ -18,6 +18,11 @@ mkdir -p "$backup_directory"
 chmod 700 "$backup_directory"
 archive="$backup_directory/code-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
 
+# A retried upgrade may already have the new vendor directory but old provider
+# manifests. Artisan cannot clear these because it fails while booting first.
+# Remove only generated bootstrap files, never application cache or sessions.
+"$php_bin" -r 'foreach (["config", "packages", "services", "routes-v7", "events"] as $name) { $path = "bootstrap/cache/$name.php"; if (is_file($path) && !unlink($path)) { exit(1); } }'
+
 # The pre-rendered maintenance page works even while vendor is being replaced.
 "$php_bin" artisan down --render="errors::503" --retry=60
 tar -czf "$archive" \
