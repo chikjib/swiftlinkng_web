@@ -16,14 +16,14 @@ use PHPUnit\Framework\TestCase;
 
 class CablePurchaseTest extends TestCase
 {
-    /** @dataProvider cableResponses */
+    #[\PHPUnit\Framework\Attributes\DataProvider('cableResponses')]
     public function test_vtpass_cable_response_with_optional_voucher(string $plan, string $status, ?string $voucher): void
     {
         $container = new Container();
         Container::setInstance($container);
         $container->instance('config', new Repository(['app' => ['GATE_TOKEN' => '']]));
         $container->instance('log', new \Illuminate\Log\Logger(new \Psr\Log\NullLogger()));
-        $factory = $this->createMock(ResponseFactory::class);
+        $factory = $this->createStub(ResponseFactory::class);
         $factory->method('json')->willReturnCallback(fn ($data, $status = 200) => new JsonResponse($data, $status));
         $container->instance(ResponseFactory::class, $factory);
         Facade::clearResolvedInstances();
@@ -118,7 +118,7 @@ class CablePurchaseTest extends TestCase
         }
     }
 
-    public function cableResponses(): array
+    public static function cableResponses(): array
     {
         return [
             'DStv without voucher' => ['DSTV', 'delivered', null],

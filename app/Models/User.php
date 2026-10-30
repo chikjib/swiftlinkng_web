@@ -7,6 +7,7 @@ use App\Traits\ReferenceTrait;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Laravel\Passport\HasApiTokens;
+use Laravel\Passport\Contracts\OAuthenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 use Illuminate\Support\Facades\Http;
 
-class User extends Authenticatable
+class User extends Authenticatable implements OAuthenticatable
 //implements MustVerifyEmail
 //class User extends Authenticatable
 

@@ -147,7 +147,7 @@ class InternationalController extends Controller
         $v = $r->validate(['outcome' => 'required|in:success,reversed', 'evidence' => 'required|string|min:15|max:2000']);
         $row = DB::table('international_purchases')->where('id', $id)->first();
         abort_unless($row, 404);
-        abort_if(now()->diffInMinutes($row->created_at) < 5, 422, 'Wait five minutes for the provider response before resolving.');
+        abort_if($row->created_at->diffInMinutes(now()) < 5, 422, 'Wait five minutes for the provider response before resolving.');
         $result = DB::transaction(function () use ($r, $row, $v) {
             $result = $this->service->settle($row, $v['outcome']);
             DB::table('service_control_audits')->insert(['admin_id' => $r->user()->id, 'before_values' => json_encode(['international_purchase' => $row->id, 'status' => $row->status]), 'after_values' => json_encode($v), 'created_at' => now(), 'updated_at' => now()]);

@@ -17,7 +17,7 @@ abstract class EsimPurchaseTestCase extends TestCase {
         $container->instance('config', new Repository(['betting' => ['subcategory_id' => 1], 'esim_terms' => ['draft'=>'Draft eSIM terms']]));
         $container->instance('cache', new \Illuminate\Cache\Repository(new \Illuminate\Cache\ArrayStore));
         $container->instance('encrypter', new \Illuminate\Encryption\Encrypter(str_repeat('a',32),'AES-256-CBC'));
-        $responseFactory=$this->createMock(\Illuminate\Contracts\Routing\ResponseFactory::class);
+        $responseFactory=$this->createStub(\Illuminate\Contracts\Routing\ResponseFactory::class);
         $responseFactory->method('json')->willReturnCallback(fn ($data, $status=200) => new \Illuminate\Http\JsonResponse($data,$status));
         $container->instance(\Illuminate\Contracts\Routing\ResponseFactory::class,$responseFactory);
         $this->db = new Capsule($container);
@@ -50,8 +50,8 @@ use Illuminate\Support\Facades\Crypt;
 
 class EsimPurchasesTest extends EsimPurchaseTestCase {
     private function package(): array {return ['packageCode'=>'GB5','name'=>'United Kingdom 5GB','price'=>15000,'currencyCode'=>'USD','volume'=>5368709120,'duration'=>30,'durationUnit'=>'DAY','dataType'=>1,'supportTopUpType'=>2];}
-    private function provider(string $outcome='success'): EsimAccess {
-        $provider=$this->createMock(EsimAccess::class);
+    private function provider(string $outcome='success', bool $expectRequest=false): EsimAccess {
+        $provider=$expectRequest ? $this->createMock(EsimAccess::class) : $this->createStub(EsimAccess::class);
         $provider->method('packages')->willReturn([$this->package()]);
         $provider->method('request')->willReturnCallback(function ($path,$body) use ($outcome) {
             if ($outcome==='timeout') throw new \RuntimeException('network timeout');
@@ -71,7 +71,7 @@ class EsimPurchasesTest extends EsimPurchaseTestCase {
         $this->assertSame(1234567,ServiceControls::kobo(100000,'1234.567'));
     }
     public function test_purchase_is_debited_once_and_profile_is_encrypted(): void {
-        $provider=$this->provider();$provider->expects($this->once())->method('request');
+        $provider=$this->provider('success',true);$provider->expects($this->once())->method('request');
         $service=new EsimPurchases($provider);
         $row=$this->buy($service);
         $again=$service->purchase(1,$row->quote_id,$row->reference);
@@ -121,7 +121,7 @@ class EsimPurchasesTest extends EsimPurchaseTestCase {
     }
     public function test_topup_timeout_is_not_resubmitted_automatically(): void {
         $service=new EsimPurchases($this->provider());$base=$this->buy($service);
-        $provider=$this->provider('timeout');$provider->expects($this->once())->method('request');
+        $provider=$this->provider('timeout',true);$provider->expects($this->once())->method('request');
         $topupService=new EsimPurchases($provider);
         $quote=$topupService->quote(1,['package_code'=>'GB5','profile_id'=>$base->profile_id]);
         $row=$topupService->purchase(1,$quote->id,'SLE'.str_repeat('b',28));

@@ -46,7 +46,7 @@ class AutoSyncSMSServiceTest extends TestCase
         });
     }
 
-    /** @dataProvider responseProvider */
+    #[\PHPUnit\Framework\Attributes\DataProvider('responseProvider')]
     public function test_it_distinguishes_definite_failure_from_uncertain_delivery($body, int $httpStatus, string $expected): void
     {
         Http::fake(['*' => Http::response($body, $httpStatus)]);
@@ -54,7 +54,7 @@ class AutoSyncSMSServiceTest extends TestCase
         $this->assertSame($expected, $result['status']);
     }
 
-    public function responseProvider(): array
+    public static function responseProvider(): array
     {
         return [
             'pending' => [['status' => 'ok', 'data' => ['transaction' => ['status' => 'pending']]], 200, 'pending'],
@@ -71,7 +71,7 @@ class AutoSyncSMSServiceTest extends TestCase
         ];
     }
 
-    /** @dataProvider invalidRequestProvider */
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidRequestProvider')]
     public function test_it_rejects_invalid_input_before_contacting_provider(array $recipients, string $message, string $sender): void
     {
         Http::fake();
@@ -83,7 +83,7 @@ class AutoSyncSMSServiceTest extends TestCase
         }
     }
 
-    public function invalidRequestProvider(): array
+    public static function invalidRequestProvider(): array
     {
         return [
             'empty list' => [[], 'Hello', 'Swiftlink'],

@@ -4,8 +4,8 @@
     <p v-if="message" class="alert" :class="failed ? 'alert-danger' : 'alert-success'" role="alert">{{ message }}</p>
     <form class="swift-form-stack" @submit.prevent="buy">
       <section class="swift-service-card"><div class="swift-provider-grid">
-        <button v-for="network in networks" :key="network.key" class="swift-provider-option" :class="{'is-selected': selected === network.key}" type="button" :disabled="busy || pending" @click="select(network.key)">
-          <img class="internet-brand" :src="`/template/images/services/internet_${network.key}.svg`" :alt="network.label" /><span>{{ network.label }}</span>
+        <button v-for="network in networks" :key="network.key" class="swift-provider-option" :class="{'is-selected': selected === network.key}" type="button" :disabled="loading || busy || pending" @click="select(network.key)">
+          <img class="internet-brand" :src="`/template/images/services/internet_${network.key}-transparent.png`" :alt="network.label" /><span>{{ network.label }}</span>
         </button>
       </div></section>
       <div class="swift-form-group"><label for="internet-number">Smart Number</label><div class="swift-field-wrap"><i class="fas fa-mobile-alt"></i><input id="internet-number" v-model="number" required inputmode="numeric" pattern="[0-9]{6,20}" maxlength="20" class="form-control" placeholder="0801 234 5678" :disabled="busy || pending" @input="number = number.replace(/\D/g, '')" /></div></div>
@@ -22,7 +22,7 @@
 import axios from "axios";
 const newKey = () => globalThis.crypto?.randomUUID?.() || `internet-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 export default {
-  data: () => ({ selected: 'fibrex', number: '', plan: null, catalogue: [], loading: true, busy: false, pending: false, picker: false, message: '', failed: false, requestKey: newKey(), networks: [{key:'fibrex',label:'Fibre X'},{key:'smile',label:'Smile'},{key:'spectranet',label:'Spectranet'},{key:'nitel',label:'Nitel'}] }),
+  data: () => ({ selected: '', number: '', plan: null, catalogue: [], loading: true, busy: false, pending: false, picker: false, message: '', failed: false, requestKey: newKey(), networks: [{key:'fibrex',label:'Fibre X'},{key:'smile',label:'Smile'},{key:'spectranet',label:'Spectranet'},{key:'nitel',label:'Nitel'}] }),
   computed: {
     plans() { return this.catalogue.filter(p => p.network === this.selected).flatMap(p => (p.products || []).map(plan => ({...plan, subcategory_id:p.id}))); },
     selectedLabel() { return this.networks.find(n => n.key === this.selected)?.label || ''; },
@@ -32,7 +32,7 @@ export default {
     headers() { return {Authorization:`Bearer ${localStorage.getItem('token')}`,Accept:'application/json'}; },
     select(key) { this.selected=key; this.plan=null; this.message=''; this.requestKey=newKey(); },
     choose(plan) { this.plan=plan; this.picker=false; this.requestKey=newKey(); },
-    async load() { this.loading=true; try { const {data}=await axios.get('/api/internet/catalogue',{headers:this.headers()}); this.catalogue=data.data || []; this.plan=null; } catch(e) { this.failed=true; this.message=e.response?.data?.message || 'Unable to load Internet packages. Please retry.'; } finally { this.loading=false; } },
+    async load() { this.loading=true; try { const {data}=await axios.get('/api/internet/catalogue',{headers:this.headers()}); this.catalogue=Array.isArray(data.data) ? data.data : []; this.select(this.selected || 'fibrex'); this.failed=false; } catch(e) { this.failed=true; this.message=e.response?.data?.message || 'Unable to load Internet packages. Please retry.'; } finally { this.loading=false; } },
     async buy() {
       if (!this.plan || this.busy || this.pending) return;
       this.busy=true; this.message='';
@@ -46,6 +46,6 @@ export default {
 <style scoped>
 .swift-internet-page .swift-provider-option { min-width:0; padding:16px 3px; }
 .swift-internet-page .swift-provider-option > span:last-child { font-size:12px; }
-.swift-internet-page .internet-brand { width:82px; height:72px; }
+.swift-internet-page .internet-brand { width:64px; height:52px; object-fit:contain; }
 .swift-internet-page .swift-provider-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
 </style>

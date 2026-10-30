@@ -52,19 +52,17 @@ class AppServiceProvider extends ServiceProvider
             $this->app['request']->server->set('HTTPS', 'on'); // this line
             URL::forceScheme('https');
         }
-        
-        $settings = Cache::remember("social_settings",60*12,function() {
-            return Setting::where('key', 'SOCIAL')->first();
+
+        // Resolve database-backed view data only when rendering a view. Artisan
+        // commands (including migrations and package discovery) must boot without it.
+        view()->composer('*', function ($view) {
+            $settings = Cache::remember('social_settings', 60 * 12, function () {
+                return Setting::where('key', 'SOCIAL')->first();
+            });
+            [$facebook, $instagram, $twitter] = array_pad(
+                explode('|', $settings?->value ?? ''), 3, ''
+            );
+            $view->with('data', compact('facebook', 'instagram', 'twitter'));
         });
-        
-        $setting = explode('|', $settings->value);
-        $facebook = $setting[0];
-        $instagram = $setting[1];
-        $twitter = $setting[2];
-
-        $data = array("facebook" => $facebook, "instagram" => $instagram, "twitter" => $twitter);
-
-        view()->share("data", $data);
-
     }
 }

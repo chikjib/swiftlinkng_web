@@ -105,7 +105,7 @@ class MonnifyRepushTest extends TestCase
             && $request->hasHeader('Authorization', 'Bearer token'));
     }
 
-    /** @dataProvider productTypes */
+    #[\PHPUnit\Framework\Attributes\DataProvider('productTypes')]
     public function test_webhook_before_repush_does_not_credit_twice(string $type): void
     {
         $this->fakeMonnify(['product' => ['type' => $type]]);
@@ -115,7 +115,7 @@ class MonnifyRepushTest extends TestCase
         $this->assertSame(1, DB::table('orders')->count());
     }
 
-    public function productTypes(): array
+    public static function productTypes(): array
     {
         return [['RESERVED_ACCOUNT'], ['WEB_SDK'], ['MOBILE_SDK'], ['API_NOTIFICATION']];
     }
@@ -144,7 +144,7 @@ class MonnifyRepushTest extends TestCase
         $this->assertEquals(10, DB::table('users')->value('wallet'));
     }
 
-    /** @dataProvider invalidPayments */
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidPayments')]
     public function test_invalid_payment_never_funds(array $overrides, bool $success = true): void
     {
         $this->fakeMonnify($overrides, $success);
@@ -153,7 +153,7 @@ class MonnifyRepushTest extends TestCase
         $this->assertSame(0, DB::table('orders')->count());
     }
 
-    public function invalidPayments(): array
+    public static function invalidPayments(): array
     {
         return [
             'failure' => [[], false], 'pending' => [['paymentStatus' => 'PENDING']],

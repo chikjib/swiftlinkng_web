@@ -44,3 +44,11 @@
 
 /* Keep the empty-state text and surface paired in both themes. */
 .esim-app .esim-notice.esim-empty-state{background:var(--esim-surface);color:var(--esim-ink);border:1px solid var(--esim-border)}
+
+/* The banner artwork stays light in both themes. */
+.esim-app .esim-hero,.esim-app .esim-hero h1,.esim-app .esim-hero p,.esim-app .esim-hero.destination .esim-summary{color:#17202e}
+.esim-app .esim-hero.destination .esim-summary>div{background:#fffffff0;color:#17202e}
+.esim-app .esim-hero.destination button{background:#fff;color:#17202e}
+/* Anchor plan options to the bottom edge on every screen size. */
+.esim-overlay{align-items:flex-end}
+.esim-sheet{overscroll-behavior:contain}

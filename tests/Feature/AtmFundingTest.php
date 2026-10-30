@@ -44,12 +44,12 @@ class AtmFundingTest extends TestCase
         $this->postJson('/api/generate-payment-link',['amount'=>1000])->assertOk()->assertJsonPath('data.responseBody.checkoutUrl','https://checkout.monnify.com/test');
         Http::assertSent(fn($r)=>str_ends_with($r->url(),'/init-transaction') && $r['amount']==1000 && $r['paymentMethods']===['CARD'] && $r['customerEmail']==='customer@example.com' && $r['redirectUrl']==='https://swiftlinkng.com/dashboard/callback' && $r->hasHeader('Authorization','Bearer token'));
     }
-    /** @dataProvider invalidAmounts */
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidAmounts')]
     public function test_invalid_amount_is_rejected_without_gateway_call($amount): void
     {
         $this->login();$this->postJson('/api/generate-payment-link',['amount'=>$amount])->assertUnprocessable();Http::assertNothingSent();
     }
-    public function invalidAmounts(): array {return [[null],[0],[-10],[99],['invalid']];}
+    public static function invalidAmounts(): array {return [[null],[0],[-10],[99],['invalid']];}
     public function test_provider_rejection_is_reported_as_failure(): void
     {
         $this->login();$this->gateway(['requestSuccessful'=>false,'responseMessage'=>'Card funding unavailable']);

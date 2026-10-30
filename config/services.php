@@ -2,6 +2,15 @@
 
 return [
 
+    'firebase' => [
+        'server_key' => env('FIREBASE_SERVER_KEY'),
+    ],
+
+    'africastalking' => [
+        'username' => env('AFST_USERNAME'),
+        'api_key' => env('AFRICAISTALKING_APIKEY_LIVE'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

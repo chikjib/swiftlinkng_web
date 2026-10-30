@@ -69,7 +69,7 @@ class PalmpayIdentityTest extends TestCase
         return openssl_encrypt($number, 'AES-128-CTR', 'SWIFtlInk1nG', 0, 'SWiftLiNknG89101');
     }
 
-    /** @dataProvider identities */
+    #[\PHPUnit\Framework\Attributes\DataProvider('identities')]
     public function test_creates_using_the_correct_identity_type(bool $bvn, bool $nin, string $type, string $number): void
     {
         $response = $this->createAccount($bvn ? $this->encrypt('11111111111') : null, $nin ? $this->encrypt('22222222222') : null);

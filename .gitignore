@@ -28,6 +28,7 @@
 .env
 .env.*
 !.env.example
+!.env.testing
 
 # =========================
 
@@ -47,8 +48,8 @@
 
 # =========================
 
-/phpunit.xml
 /.phpunit.result.cache
+/.phpunit.cache/
 
 # =========================
 

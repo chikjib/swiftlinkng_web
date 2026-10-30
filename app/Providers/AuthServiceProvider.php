@@ -18,6 +18,15 @@ class AuthServiceProvider extends ServiceProvider
         'App\Models\Model' => 'App\Policies\ModelPolicy',
     ];
 
+    public function register()
+    {
+        parent::register();
+
+        // Apply these before Passport registers its routes or creates clients.
+        Passport::$clientUuids = true;
+        Passport::$registersJsonApiRoutes = true;
+    }
+
     /**
      * Register any authentication / authorization services.
      *
@@ -25,10 +34,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->registerPolicies();
-
-        // if (!$this->app->routesAreCached()) {
-        Passport::routes();
+        // Keep the password grant available for existing OAuth clients.
+        Passport::enablePasswordGrant();
         Passport::tokensExpireIn(now()->addMinutes(30));
         Passport::refreshTokensExpireIn(now()->addDays(3));
         

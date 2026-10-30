@@ -1,24 +1,34 @@
 name: Deploy Swiftlink to cPanel
 
+# Pushes run validate.yml. This major upgrade must be deployed deliberately
+# after a staging rehearsal and a verified external database/files backup.
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
+    inputs:
+      backup_confirmed:
+        description: "I tested staging, verified backups, reviewed pending migrations, and paused cron/workers"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
   group: swiftlink-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  validate:
+    uses: ./.github/workflows/validate.yml
+
   deploy:
+    if: inputs.backup_confirmed
+    needs: validate
     name: Build and deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    environment: production
+    timeout-minutes: 30
     env:
       CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
       CPANEL_USER: ${{ secrets.CPANEL_USER }}
@@ -26,123 +36,82 @@ jobs:
       CPANEL_PATH: ${{ secrets.CPANEL_PATH }}
       CPANEL_SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
       CPANEL_KNOWN_HOSTS: ${{ secrets.CPANEL_KNOWN_HOSTS }}
+      CPANEL_PHP: ${{ vars.CPANEL_PHP || '/opt/cpanel/ea-php84/root/usr/bin/php' }}
       MIX_APP_URL: ${{ vars.MIX_APP_URL }}
       MIX_APP_NAME: ${{ vars.MIX_APP_NAME }}
       MIX_SESSION_LIFETIME: ${{ vars.MIX_SESSION_LIFETIME }}
       MIX_RAVE_PUBLICKEY: ${{ secrets.MIX_RAVE_PUBLICKEY }}
-
     steps:
+      - uses: actions/checkout@v4
       - name: Check deployment configuration
-        id: preflight
         shell: bash
         run: |
-          missing=()
-          for name in CPANEL_HOST CPANEL_USER CPANEL_PORT CPANEL_PATH CPANEL_SSH_KEY; do
+          for name in CPANEL_HOST CPANEL_USER CPANEL_PORT CPANEL_PATH CPANEL_SSH_KEY CPANEL_KNOWN_HOSTS CPANEL_PHP; do
             if [ -z "${!name}" ]; then
-              missing+=("$name")
+              echo "::error::Missing deployment configuration: $name"
+              exit 1
             fi
           done
-
-          if [ "${#missing[@]}" -gt 0 ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Deployment skipped. Configure these GitHub Actions secrets: ${missing[*]}"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check out application
-        if: steps.preflight.outputs.ready == 'true'
-        uses: actions/checkout@v4
-
-      - name: Set up PHP
-        if: steps.preflight.outputs.ready == 'true'
-        uses: shivammathur/setup-php@v2
+          [[ "$CPANEL_PATH" == /* && "$CPANEL_PATH" != / ]]
+          [[ "$CPANEL_PHP" == /* ]]
+      - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: "8.4"
           tools: composer:v2
           coverage: none
-          extensions: mbstring, bcmath, curl, dom, fileinfo, gd, intl, pdo_mysql, xml, zip
-
-      - name: Install production PHP dependencies
-        if: steps.preflight.outputs.ready == 'true'
+          extensions: mbstring, bcmath, curl, dom, fileinfo, gd, intl, pdo_mysql, sodium, xml, zip
+      - name: Install locked production dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+      - name: Verify application boots without development dependencies
         run: |
-          composer install \
-            --no-dev \
-            --no-interaction \
-            --prefer-dist \
-            --optimize-autoloader \
-            --no-scripts
-
-      - name: Set up Node
-        if: steps.preflight.outputs.ready == 'true'
-        uses: actions/setup-node@v4
+          composer check-platform-reqs --no-dev
+          php artisan package:discover --env=testing --ansi
+          php artisan --version
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-
-      - name: Install frontend dependencies
-        if: steps.preflight.outputs.ready == 'true'
-        run: npm ci --legacy-peer-deps
-
-      - name: Build Vite assets
-        if: steps.preflight.outputs.ready == 'true'
-        run: npm run build
-
-      - name: Configure SSH
-        if: steps.preflight.outputs.ready == 'true'
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+      - name: Configure verified SSH host
         shell: bash
         run: |
           install -d -m 700 "$HOME/.ssh"
           printf '%s\n' "$CPANEL_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/swiftlink_deploy"
           chmod 600 "$HOME/.ssh/swiftlink_deploy"
-
-          if [ -n "$CPANEL_KNOWN_HOSTS" ]; then
-            printf '%s\n' "$CPANEL_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          fi
-          
-          # Automatically fetch missing host key if needed
-          ssh-keyscan -H -p "$CPANEL_PORT" "$CPANEL_HOST" >> "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$CPANEL_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
-
-      - name: Upload application to public_html
-        if: steps.preflight.outputs.ready == 'true'
+      - name: Check server, save code rollback archive, and enable maintenance
         shell: bash
         run: |
-          rsync -az \
-            -e "ssh -i $HOME/.ssh/swiftlink_deploy -p $CPANEL_PORT -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.env*' \
-            --exclude='.cpanel.yml' \
-            --exclude='.ftp-deploy-sync-state.json' \
-            --exclude='.ftpquota' \
-            --exclude='.user.ini' \
-            --exclude='php.ini' \
-            --exclude='cookie.txt' \
-            --exclude='node_modules/' \
-            --exclude='public/hot' \
-            --exclude='public/storage' \
-            --exclude='storage/app/' \
-            --exclude='storage/logs/' \
-            --exclude='storage/framework/cache/' \
-            --exclude='storage/framework/sessions/' \
-            --exclude='storage/framework/views/' \
-            --exclude='tests/' \
+          printf -v arguments '%q ' "$CPANEL_PATH" "$CPANEL_PHP"
+          ssh -i "$HOME/.ssh/swiftlink_deploy" -p "$CPANEL_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$CPANEL_USER@$CPANEL_HOST" "bash -s -- $arguments" < scripts/deploy-prepare.sh
+      - name: Upload application while maintenance is enabled
+        shell: bash
+        run: |
+          rsync -az --delay-updates \
+            -e "ssh -i $HOME/.ssh/swiftlink_deploy -p $CPANEL_PORT -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+            --exclude='.git/' --exclude='.github/' --exclude='.env*' \
+            --exclude='.cpanel.yml' --exclude='.ftp-deploy-sync-state.json' \
+            --exclude='.ftpquota' --exclude='.user.ini' --exclude='php.ini' \
+            --exclude='cookie*.txt' --exclude='node_modules/' \
+            --exclude='public/hot' --exclude='public/storage' \
+            --exclude='storage/' --exclude='bootstrap/cache/*.php' \
+            --exclude='tests/' --exclude='phpunit.xml' --exclude='.phpunit.cache/' \
             ./ "$CPANEL_USER@$CPANEL_HOST:$CPANEL_PATH/"
-
-      - name: Finish Laravel deployment
-        if: steps.preflight.outputs.ready == 'true'
+          # Replace vendor exactly: stale package classes must not survive a major upgrade.
+          rsync -az --delete --delay-updates \
+            -e "ssh -i $HOME/.ssh/swiftlink_deploy -p $CPANEL_PORT -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+            vendor/ "$CPANEL_USER@$CPANEL_HOST:$CPANEL_PATH/vendor/"
+      - name: Upgrade authentication, check readiness, and reopen site
         shell: bash
         run: |
-          ssh \
-            -i "$HOME/.ssh/swiftlink_deploy" \
-            -p "$CPANEL_PORT" \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=accept-new \
-            "$CPANEL_USER@$CPANEL_HOST" \
-            "cd '$CPANEL_PATH' &&
-            rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php &&
-            php artisan package:discover --ansi &&
-            php artisan config:cache &&
-            php artisan view:cache &&
-            chmod -R ug+rwX storage bootstrap/cache"
+          printf -v arguments '%q ' "$CPANEL_PATH" "$CPANEL_PHP"
+          ssh -i "$HOME/.ssh/swiftlink_deploy" -p "$CPANEL_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$CPANEL_USER@$CPANEL_HOST" "bash -s -- $arguments" < scripts/deploy-finish.sh
+      - name: Report failed deployment
+        if: failure()
+        run: echo "::error::If server preparation started, maintenance may still be enabled. Inspect the failed step and follow docs/LARAVEL_13_DEPLOYMENT.md before reopening."

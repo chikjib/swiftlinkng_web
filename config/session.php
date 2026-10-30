@@ -48,6 +48,9 @@ return [
 
     'encrypt' => false,
 
+    // Preserve sessions created before Laravel 13. Switching to JSON logs users out.
+    'serialization' => 'php',
+
     /*
     |--------------------------------------------------------------------------
     | Session File Location

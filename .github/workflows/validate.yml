@@ -1,0 +1,46 @@
+name: Validate PHP 8.4 upgrade
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          coverage: none
+          extensions: mbstring, bcmath, curl, dom, fileinfo, gd, intl, pdo_mysql, pdo_sqlite, sodium, xml, zip
+      - name: Validate dependency manifest
+        run: composer validate --strict
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-scripts
+      - name: Check runtime and dependencies
+        run: |
+          composer check-platform-reqs
+          composer audit
+          php artisan package:discover --env=testing --ansi
+      - name: Run isolated PHP tests
+        run: vendor/bin/phpunit --fail-on-warning --fail-on-risky --fail-on-phpunit-notice
+      - name: Check PHP syntax
+        run: find app bootstrap config routes database tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+      - name: Compile application views
+        run: php artisan view:cache --env=testing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - name: Test browser logic and build frontend
+        run: |
+          node --test tests/js/*.test.cjs
+          npm run build

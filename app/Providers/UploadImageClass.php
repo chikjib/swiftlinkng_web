@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use AfricasTalking\SDK\AfricasTalking;
-use App\AppConstants;
 use App\Models\Farmer;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -108,7 +107,7 @@ class UploadImageClass
     public function sendPush($deviceToken, $notification, $data, $priority = 'high')
     {
         $url = "https://fcm.googleapis.com/fcm/send";
-        $serverKey = AppConstants::FIREBASE_SERVER_KEY;
+        $serverKey = config('services.firebase.server_key');
 
         // $arrayInfo = array(
         //     'product' => $product, 'orderId' => $orderid,
@@ -144,7 +143,7 @@ class UploadImageClass
 
     public function sendSMS($phone, $message)
     {
-        $AT =  new AfricasTalking(AppConstants::AFST_USERNAME, AppConstants::AFRICAISTALKING_APIKEY_LIVE);
+        $AT =  new AfricasTalking(config('services.africastalking.username'), config('services.africastalking.api_key'));
         $sms      = $AT->sms();
         // Use the service
         $result   = $sms->send([

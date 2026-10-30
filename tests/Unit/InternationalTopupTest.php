@@ -25,7 +25,7 @@ abstract class InternationalPurchaseTestCase extends TestCase
         $container->instance('config', new Repository(['betting' => ['subcategory_id' => 1], 'esim_terms' => ['draft' => 'Draft eSIM terms']]));
         $container->instance('cache', new \Illuminate\Cache\Repository(new \Illuminate\Cache\ArrayStore()));
         $container->instance('encrypter', new \Illuminate\Encryption\Encrypter(str_repeat('a', 32), 'AES-256-CBC'));
-        $responseFactory = $this->createMock(\Illuminate\Contracts\Routing\ResponseFactory::class);
+        $responseFactory = $this->createStub(\Illuminate\Contracts\Routing\ResponseFactory::class);
         $responseFactory->method('json')->willReturnCallback(fn($data, $status = 200) => new \Illuminate\Http\JsonResponse($data, $status));
         $container->instance(\Illuminate\Contracts\Routing\ResponseFactory::class, $responseFactory);
         $this->db = new Capsule($container);

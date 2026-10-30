@@ -7,13 +7,13 @@ use PHPUnit\Framework\TestCase;
 
 class ProcessOpayWalletDepositTest extends TestCase
 {
-    /** @dataProvider amountProvider */
+    #[\PHPUnit\Framework\Attributes\DataProvider('amountProvider')]
     public function test_it_normalizes_opay_amounts($input, float $expected): void
     {
         $this->assertSame($expected, ProcessOpayWalletDeposit::parseAmount($input));
     }
 
-    public function amountProvider(): array
+    public static function amountProvider(): array
     {
         return [
             'comma-separated amount' => ['1,000.00', 1000.00],

@@ -9,9 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 class EnsureTransactionPinTest extends TestCase
 {
-    /**
-     * @dataProvider unattendedUserLevels
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('unattendedUserLevels')]
     public function test_unattended_transaction_channels_bypass_the_pin_challenge(int $userLevel): void
     {
         $user = new User();
@@ -28,7 +26,7 @@ class EnsureTransactionPinTest extends TestCase
         $this->assertSame('request-continued', $response);
     }
 
-    public function unattendedUserLevels(): array
+    public static function unattendedUserLevels(): array
     {
         return [
             'WhatsApp bot user' => [2],

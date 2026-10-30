@@ -105,6 +105,10 @@ return [
     |
     */
 
-    'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_'),
+    // Laravel 9 appended this separator inside its prefixed stores.
+    'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_').':',
+
+    // Retain the legacy object cache payloads during the framework upgrade.
+    'serializable_classes' => true,
 
 ];

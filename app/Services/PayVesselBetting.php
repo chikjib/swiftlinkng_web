@@ -59,6 +59,16 @@ class PayVesselBetting
             Log::warning('PayVessel invalid response', ['operation' => $this->operation($path), 'http_status' => $response->status()]);
             throw new HttpException(502, 'The betting provider returned an unexpected response. Please contact Swiftlink support.');
         }
+        // Provider IDs may be JSON numbers. Return strings before they reach
+        // browser number parsing or strict comparisons with saved admin IDs.
+        if ($path === 'billers' || preg_match('#^billers/[^/]+/items$#', $path)) {
+            $data = array_map(function ($row) {
+                foreach (['biller_id', 'item_id'] as $field) {
+                    if (isset($row[$field])) $row[$field] = (string) $row[$field];
+                }
+                return $row;
+            }, $data);
+        }
         return $data;
     }
 
@@ -107,15 +117,15 @@ class PayVesselBetting
     public function billers(): array
     {
         $settings = ServiceControls::enabled('betting');
-        $allowed = json_decode($settings->betting_biller_ids ?? '[]', true);
+        $allowed = array_map('strval', json_decode($settings->betting_biller_ids ?? '[]', true) ?: []);
         abort_if(empty($allowed), 503, 'Betting platforms are being set up. Please try again later.');
         return array_values(array_filter($this->request('GET', 'billers'), fn ($b) =>
-            in_array($b['biller_id'] ?? null, $allowed, true) && ($b['status'] ?? 1) == 1));
+            in_array((string) ($b['biller_id'] ?? ''), $allowed, true) && ($b['status'] ?? 1) == 1));
     }
 
     public function biller(string $id): array
     {
-        foreach ($this->billers() as $biller) if ($biller['biller_id'] === $id) return $biller;
+        foreach ($this->billers() as $biller) if ((string) $biller['biller_id'] === $id) return $biller;
         throw ValidationException::withMessages(['biller_id' => 'Select an available betting platform.']);
     }
 

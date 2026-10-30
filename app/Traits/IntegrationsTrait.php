@@ -410,9 +410,9 @@ trait IntegrationsTrait
 
     public function SIMServerRequery($order_id)
     {
-        $response = Http::withBody()->post(AppConstants::simServerBaseUrl, [
+        $response = Http::post(AppConstants::get('simServerBaseUrl'), [
             'process' => "check_status",
-            'api_key' => AppConstants::simServerApiKey,
+            'api_key' => AppConstants::get('simServerApiKey'),
             'order_id' => $order_id,
 
         ]);
