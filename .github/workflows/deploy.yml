@@ -43,6 +43,8 @@ jobs:
       MIX_RAVE_PUBLICKEY: ${{ secrets.MIX_RAVE_PUBLICKEY }}
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare Laravel runtime directories
+        run: bash scripts/prepare-runtime.sh
       - name: Check deployment configuration
         shell: bash
         run: |

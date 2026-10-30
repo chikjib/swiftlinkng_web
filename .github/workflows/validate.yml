@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare Laravel runtime directories
+        run: bash scripts/prepare-runtime.sh
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
