@@ -39,6 +39,7 @@ class PayVesselBetting
             // Only log response metadata. Never log credentials, bodies or account IDs.
             Log::warning('PayVessel request rejected', [
                 'operation' => $this->operation($path),
+                'provider_host' => parse_url(config('betting.base_url'), PHP_URL_HOST),
                 'http_status' => $httpStatus,
                 'response_format' => is_array($payload) ? 'json' : 'non_json',
                 'provider_status' => is_bool($status) ? $status : gettype($status),
@@ -119,8 +120,27 @@ class PayVesselBetting
         $settings = ServiceControls::enabled('betting');
         $allowed = array_map('strval', json_decode($settings->betting_biller_ids ?? '[]', true) ?: []);
         abort_if(empty($allowed), 503, 'Betting platforms are being set up. Please try again later.');
-        return array_values(array_filter($this->request('GET', 'billers'), fn ($b) =>
-            in_array((string) ($b['biller_id'] ?? ''), $allowed, true) && ($b['status'] ?? 1) == 1));
+        $catalogue = $this->request('GET', 'billers');
+        $selected = array_values(array_filter($catalogue, fn ($b) =>
+            in_array((string) ($b['biller_id'] ?? ''), $allowed, true)));
+        $available = array_values(array_filter($selected, fn ($b) => ($b['status'] ?? 1) == 1));
+        if (!$available) {
+            $reason = !$catalogue ? 'empty_provider_catalogue' : (!$selected ? 'configured_billers_not_found' : 'selected_billers_unavailable');
+            Log::warning('PayVessel betting catalogue unavailable', [
+                'reason' => $reason,
+                'provider_host' => parse_url(config('betting.base_url'), PHP_URL_HOST),
+                'configured_count' => count($allowed),
+                'provider_count' => count($catalogue),
+                'matched_count' => count($selected),
+            ]);
+            $message = match ($reason) {
+                'empty_provider_catalogue' => 'The betting provider returned no platforms. Please try again shortly or contact Swiftlink support.',
+                'configured_billers_not_found' => 'Betting platforms need to be refreshed by Swiftlink support. Please try again later.',
+                default => 'The selected betting platforms are temporarily unavailable from the provider. Please try again later.',
+            };
+            throw new HttpException(503, $message);
+        }
+        return $available;
     }
 
     public function biller(string $id): array
