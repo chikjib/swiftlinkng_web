@@ -128,6 +128,26 @@ Existing Actions secrets are reused:
 
 Obtain/verify the SSH host fingerprint through cPanel or your hosting provider.
 The workflow deliberately does not trust a freshly scanned host key.
+
+If Actions reports `No ED25519 host key is known for [host]:port`, the saved
+`CPANEL_KNOWN_HOSTS` entry does not match that exact SSH endpoint. On a trusted
+computer, substitute the SAME hostname and port from your GitHub secrets:
+
+```bash
+ssh-keyscan -p YOUR_SSH_PORT -t ed25519 YOUR_SSH_HOST > cpanel-known-hosts.txt
+ssh-keygen -lf cpanel-known-hosts.txt
+```
+
+Compare the displayed SHA256 fingerprint with the server's ED25519 fingerprint
+provided through your host's trusted control panel/support channel. A scan alone
+does not establish the server's identity. After it matches, replace the GitHub
+Actions secret `CPANEL_KNOWN_HOSTS` with the full contents of the file, not just
+the fingerprint. For a non-default port its line begins `[hostname]:port`; for
+port 22 it normally begins `hostname`. Use the SSH server hostname, not an HTTPS
+URL. The server host key differs from your deployment key in `CPANEL_SSH_KEY`.
+Update the secret in the `production` environment if that environment defines
+an overriding value. Rerun the workflow after saving the corrected secret.
+
 Retain existing frontend `MIX_*` variables/public payment key used by your build.
 The workflow uses the GitHub `production` environment; configure any desired
 reviewers and branch restrictions there. Make deployment secrets available to

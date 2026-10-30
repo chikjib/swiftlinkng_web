@@ -56,6 +56,8 @@ jobs:
           done
           [[ "$CPANEL_PATH" == /* && "$CPANEL_PATH" != / ]]
           [[ "$CPANEL_PHP" == /* ]]
+      - name: Configure verified SSH host
+        run: bash scripts/configure-deploy-ssh.sh
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -75,14 +77,6 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps
       - run: npm run build
-      - name: Configure verified SSH host
-        shell: bash
-        run: |
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$CPANEL_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/swiftlink_deploy"
-          chmod 600 "$HOME/.ssh/swiftlink_deploy"
-          printf '%s\n' "$CPANEL_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
       - name: Check server, save code rollback archive, and enable maintenance
         shell: bash
         run: |
