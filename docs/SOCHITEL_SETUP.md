@@ -3,6 +3,8 @@
 The developer portal documents the REST API:
 https://clientportal.sochitel.com/apidoc.html?section=getting-started
 
+The client portal REST base URL `https://clientportal.sochitel.com/api` was verified with authenticated read-only balance and operator requests on 2026-10-30. Its deployed response format is `{"sysErr":0,"sysId":"...","response":...}`, rather than the top-level `errno` format shown in the public documentation. Balance is an object inside `response`; the operator catalogue is a list directly inside `response`. Both REST formats are supported. Keep this URL for the matching client portal account; production access can have a different assigned base URL and credentials.
+
 ## REST / RSA setup
 
 1. Obtain the **REST base URL** and numeric **account User ID** from Sochitel. Set `SOCHITEL_BASE_URL` on the backend server to that base URL. Do not use the documentation URL or an ARTX command URL. The application appends `/balance`, `/operators` and `/transaction`.

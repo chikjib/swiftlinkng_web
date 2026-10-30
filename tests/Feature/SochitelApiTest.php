@@ -80,6 +80,48 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
         $this->getJson('/api/admin/international/settings')->assertOk();
     }
 
+    public function test_client_portal_live_response_wrapper_verifies_balance_and_operator_list(): void
+    {
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://sochitel.test/api/balance' => Http::response(['sysErr' => 0, 'sysId' => 'request1', 'response' => ['balance' => '100.00', 'currency' => 'USD']]),
+            'https://sochitel.test/api/operators' => Http::response(['sysErr' => 0, 'sysId' => 'request2', 'response' => F::operators()]),
+        ]);
+        $this->login(1);
+        $this->postJson('/api/admin/international/sochitel/test')->assertOk()
+            ->assertJsonPath('data.currency', 'USD')->assertJsonPath('data.balance', '100.00');
+        $this->assertNotNull(DB::table('international_settings')->value('sochitel_verified_at'));
+        Http::assertSentCount(2);
+    }
+
+    public function test_client_portal_wrapper_preserves_transaction_identity_and_rejection_codes(): void
+    {
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        $transaction = ['id' => '123456789', 'reference' => 'payment1', 'recipient' => '233241234567', 'product' => '11', 'status' => ['id' => 9, 'type' => 1]];
+        Http::fakeSequence()->push(['sysErr' => 0, 'response' => $transaction])
+            ->push(['sysErr' => 110], 403)->push(['sysErr' => 9], 401);
+        $provider = app(Sochitel::class);
+        $settings = app(InternationalTopup::class)->settings();
+        $result = $provider->request($settings, 'POST', '/transaction', ['reference' => 'payment1']);
+        $this->assertSame(['errno' => 0] + $transaction, $result);
+        $this->assertSame(110, $provider->request($settings, 'POST', '/transaction', ['reference' => 'payment2'])['errno']);
+        $this->expectException(\App\Services\SochitelConnectionException::class);
+        $this->expectExceptionMessage('RSA signature was rejected');
+        $provider->request($settings, 'GET', '/balance');
+    }
+
+    public function test_client_portal_malformed_success_is_not_verified(): void
+    {
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['sysErr' => 0, 'response' => 'invalid'])]);
+        $this->login(1);
+        $this->postJson('/api/admin/international/sochitel/test')->assertStatus(422);
+        $this->assertNull(DB::table('international_settings')->value('sochitel_verified_at'));
+    }
+
     public function test_admin_sees_safe_rest_authentication_and_endpoint_diagnostics(): void
     {
         $this->login(1);

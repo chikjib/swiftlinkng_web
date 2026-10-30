@@ -47,6 +47,16 @@ class Sochitel
             ->withOptions(['allow_redirects' => false])->connectTimeout(10)->timeout(50)
             ->withBody($payload, 'application/json')->send($method, $url);
         $data = $r->json();
+        // The client portal wraps successful payloads in response, using sysErr
+        // for request errors. Other REST deployments use the documented errno.
+        if (is_array($data) && !array_key_exists('errno', $data) && is_numeric($data['sysErr'] ?? null)) {
+            $code = (int) $data['sysErr'];
+            $result = $data['response'] ?? [];
+            if ($code === 0 && !is_array($result)) throw SochitelConnectionException::response($r->status());
+            if (!is_array($result)) $result = [];
+            if ($path === '/operators' && $code === 0 && array_is_list($result)) $result = ['operators' => $result];
+            $data = ['errno' => $code] + $result;
+        }
         if (!is_array($data) || !is_numeric($data['errno'] ?? null)) throw SochitelConnectionException::response($r->status());
         // Transaction failures can contain a valid transaction ID even on HTTP 4xx.
         if ($path !== '/transaction' && (!$r->successful() || (int) $data['errno'] !== 0)) throw SochitelConnectionException::response($r->status(), (int) $data['errno']);
