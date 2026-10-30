@@ -53,6 +53,13 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('sochitel-test', function (Request $request) {
+            return Limit::perMinute(5)->by('sochitel-test:'.($request->user()?->id ?: $request->ip()))
+                ->response(function (Request $request, array $headers) {
+                    return response()->json(['message' => 'Too many Sochitel connection tests. Try again in '.($headers['Retry-After'] ?? 60).' seconds.'], 429, $headers);
+                });
+        });
+
         RateLimiter::for('internet-admin-action', function (Request $request) {
             return Limit::perMinute(5)->by('internet-admin:'.($request->user()?->id ?: $request->ip()).':'.$request->route('provider').':'.$request->path());
         });

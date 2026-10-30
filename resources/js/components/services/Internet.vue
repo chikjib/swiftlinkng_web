@@ -5,7 +5,7 @@
     <form class="swift-form-stack" @submit.prevent="buy">
       <section class="swift-service-card"><div class="swift-provider-grid">
         <button v-for="network in networks" :key="network.key" class="swift-provider-option" :class="{'is-selected': selected === network.key}" type="button" :disabled="loading || busy || pending" @click="select(network.key)">
-          <img class="internet-brand" :src="`/template/images/services/internet_${network.key}-transparent.png`" :alt="network.label" /><span>{{ network.label }}</span>
+          <img class="internet-brand" :src="providerLogo(network.key)" :alt="network.label" @error="logoFailed($event, network.key)" /><span>{{ network.label }}</span>
         </button>
       </div></section>
       <div class="swift-form-group"><label for="internet-number">Smart Number</label><div class="swift-field-wrap"><i class="fas fa-mobile-alt"></i><input id="internet-number" v-model="number" required inputmode="numeric" pattern="[0-9]{6,20}" maxlength="20" class="form-control" placeholder="0801 234 5678" :disabled="busy || pending" @input="number = number.replace(/\D/g, '')" /></div></div>
@@ -29,6 +29,8 @@ export default {
   },
   mounted() { this.load(); },
   methods: {
+    providerLogo(key) { const logo=this.catalogue.find(p => p.network === key)?.logo; return typeof logo === 'string' && (logo.startsWith('https://') || logo.startsWith('/template/images/services/')) ? logo : `/template/images/services/internet_${key}-transparent.png`; },
+    logoFailed(event, key) { const fallback=`/template/images/services/internet_${key}-transparent.png`; if (!event.target.src.endsWith(fallback)) event.target.src=fallback; else event.target.style.display='none'; },
     headers() { return {Authorization:`Bearer ${localStorage.getItem('token')}`,Accept:'application/json'}; },
     select(key) { this.selected=key; this.plan=null; this.message=''; this.requestKey=newKey(); },
     choose(plan) { this.plan=plan; this.picker=false; this.requestKey=newKey(); },

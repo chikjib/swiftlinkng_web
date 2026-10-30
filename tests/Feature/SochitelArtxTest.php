@@ -77,9 +77,9 @@ class SochitelArtxTest extends InternetServiceTest
     }
     public function test_production_endpoint_uses_the_documented_artx_balance_request(): void
     {
-        config(['international.sochitel_artx_url' => 'https://artxh1.sochitel.com/apiv8']);
+        config(['international.sochitel_artx_url' => 'https://artxh1.sochitel.com/apiv8.php']);
         Http::fake([
-            'https://artxh1.sochitel.com/apiv8' => Http::response([
+            'https://artxh1.sochitel.com/apiv8.php' => Http::response([
                 'command' => 'getBalance', 'status' => ['id' => 0],
                 'result' => ['value' => 10000, 'currency' => 'NGN'],
             ]),
@@ -91,7 +91,7 @@ class SochitelArtxTest extends InternetServiceTest
         Http::assertSentCount(1);
         Http::assertSent(function ($request) {
             $auth = $request['auth'];
-            return $request->url() === 'https://artxh1.sochitel.com/apiv8'
+            return $request->url() === 'https://artxh1.sochitel.com/apiv8.php'
                 && $request->method() === 'POST'
                 && $request['version'] === 5
                 && $request['command'] === 'getBalance'
@@ -100,6 +100,15 @@ class SochitelArtxTest extends InternetServiceTest
                 && $auth['password'] === hash('sha512', $auth['salt'].sha1('testtest'))
                 && $auth['signature'] === hash('sha512', sha1('testtest').$auth['salt'].'getBalance');
         });
+    }
+
+    public function test_artx_wrong_endpoint_has_an_actionable_admin_error(): void
+    {
+        Http::fake(['*' => Http::response('<html>Not Found</html>', 404)]);
+        $this->login(1);
+        $response = $this->postJson('/api/admin/international/sochitel/test')->assertStatus(422);
+        $this->assertStringContainsString('HTTP 404', $response->json('message'));
+        $this->assertStringContainsString('SOCHITEL_ARTX_URL', $response->json('message'));
     }
     public function test_catalogue_uses_separate_commands_and_internet_category_and_verifies_auth(): void
     {

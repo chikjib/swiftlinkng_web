@@ -26,9 +26,10 @@ class SochitelArtx
         if (config('international.sochitel_artx_ssl_key')) $options['ssl_key'] = config('international.sochitel_artx_ssl_key');
         $response = Http::acceptJson()->withOptions($options)->connectTimeout(10)->timeout(50)->post($url, $body);
         $r = $response->json();
-        if (!$response->successful() || !is_array($r) || ($r['command'] ?? null) !== $command || !is_numeric($r['status']['id'] ?? null)) {
-            throw new \RuntimeException('Sochitel returned an unreadable ARTX response.');
+        if (!is_array($r) || ($r['command'] ?? null) !== $command || !is_numeric($r['status']['id'] ?? null)) {
+            throw SochitelConnectionException::response($response->status(), is_numeric($r['sysErr'] ?? null) ? (int) $r['sysErr'] : null, 'ARTX');
         }
+        if ($command !== 'execTransaction' && (!$response->successful() || ($command !== 'getTransaction' && (int) $r['status']['id'] !== 0))) throw SochitelConnectionException::response($response->status(), (int) $r['status']['id'], 'ARTX');
         return $r;
     }
 

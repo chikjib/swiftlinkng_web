@@ -69,7 +69,7 @@ class InternetAdminController extends BaseController
             return response()->json(['message' => "Synced {$count} packages. Existing switches and overrides were preserved."]);
         } catch (\Throwable $e) {
             Log::warning('internet.admin_sync_failed', ['provider' => $provider, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Package sync failed. The previous package list was preserved. Check the provider configuration and retry.'], 502);
+            return response()->json(['message' => $e instanceof \App\Services\SochitelConnectionException ? $e->getMessage() : 'Package sync failed. The previous package list was preserved. Check the provider configuration and retry.'], 502);
         }
     }
 
@@ -91,7 +91,7 @@ class InternetAdminController extends BaseController
         } catch (\Throwable $e) {
             Log::warning('internet.admin_test_failed', ['provider' => $provider, 'error' => $e->getMessage()]);
             $status = 'failed';
-            $message = 'Connection test failed. Check the configured provider credentials and account access.';
+            $message = $e instanceof \App\Services\SochitelConnectionException ? $e->getMessage() : 'Connection test failed. Check the configured provider credentials and account access.';
         }
         DB::transaction(function () use ($provider, $admin, $request, $status, $message) {
             $admin->settings($provider, true);

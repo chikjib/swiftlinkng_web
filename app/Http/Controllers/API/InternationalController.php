@@ -132,6 +132,8 @@ class InternationalController extends Controller
                 return $result;
             });
             return response()->json(['data' => $result]);
+        } catch (\App\Services\SochitelConnectionException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             throw $e;
         } catch (\Throwable $e) {

@@ -11,10 +11,10 @@ Route::middleware(['auth:api', 'throttle:60,1'])->prefix('international')->group
     Route::get('purchases', [C::class, 'history']);
     Route::get('purchases/{reference}', [C::class, 'status']);
 });
-Route::middleware(['auth:api', 'admin.only', 'throttle:30,1'])->prefix('admin/international')->group(function () {
+Route::middleware(['auth:api', 'admin.only', 'throttle:30,1,international-admin:'])->prefix('admin/international')->group(function () {
     Route::get('settings', [C::class, 'settings']);
     Route::put('settings', [C::class, 'updateSettings']);
-    Route::post('sochitel/test', [C::class, 'testSochitel'])->middleware('throttle:5,1');
+    Route::post('sochitel/test', [C::class, 'testSochitel'])->middleware('throttle:sochitel-test');
     Route::get('transactions', [C::class, 'transactions']);
     Route::post('transactions/{id}/resolve', [C::class, 'resolve']);
 });

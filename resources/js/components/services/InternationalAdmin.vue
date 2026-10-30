@@ -13,7 +13,8 @@
    <label class="sl-field">API key / international code<input class="sl-input" type="password" v-model="apiKey" autocomplete="new-password" placeholder="Leave blank to keep the saved key"></label>
    <p>{{ settings.api_key_configured?'API key configured':'API key required before enabling VTUgate' }}.</p>
    <h2>Sochitel</h2>
-   <label class="sl-field">Sochitel protocol<select class="sl-input" v-model="settings.sochitel_protocol"><option value="artx">ARTX 5.9.6 (JSON commands)</option><option value="rest">Existing REST / RSA account</option></select></label>
+   <p>For the <a href="https://clientportal.sochitel.com/apidoc.html?section=getting-started" target="_blank" rel="noopener noreferrer">Sochitel developer documentation</a>, select REST / RSA and configure your assigned REST URL, numeric user ID and RSA key. ARTX username/password credentials use a separate API.</p>
+   <label class="sl-field">Sochitel protocol<select class="sl-input" v-model="settings.sochitel_protocol"><option value="rest">REST / RSA (Sochitel developer portal)</option><option value="artx">ARTX 5.9.6 (separate username/password API)</option></select></label>
    <template v-if="settings.sochitel_protocol==='artx'">
     <p>{{ settings.sochitel_artx_url_configured?'ARTX URL configured.':'Set SOCHITEL_ARTX_URL to the HTTPS endpoint assigned by Sochitel.' }}</p>
     <label class="sl-field">ARTX username<input class="sl-input" v-model="settings.sochitel_username" autocomplete="off"></label>
@@ -32,7 +33,7 @@
    <p>First save the credentials while VTUgate is selected or top-ups are disabled. Then test the saved connection, select Sochitel, and save again to activate it.</p>
    <p>{{ settings.sochitel_verified?'Saved Sochitel credentials verified.':'Sochitel connection needs verification before activation.' }}</p>
    <h3>Sochitel operator logos</h3>
-   <p>Sochitel’s catalogue does not include logos. Add an HTTPS image URL against its operator ID to display the logo on both screens.</p>
+   <p>Available provider logo URLs are used automatically, with bundled logos for recognized Nigerian networks. Add an HTTPS image URL against an operator ID to override its logo on the website and app.</p>
    <div v-for="(logo,index) in logos" :key="index" class="sl-row mb-2"><input class="sl-input" v-model="logo.id" placeholder="Operator ID" aria-label="Sochitel operator ID" pattern="[0-9]+" required><input class="sl-input" v-model="logo.url" type="url" placeholder="https://…" aria-label="Operator logo URL" required><button class="sl-btn ghost" type="button" @click="logos.splice(index,1)">Remove</button></div>
    <button class="sl-btn ghost" type="button" @click="logos.push({id:'',url:''})">Add Operator Logo</button>
    <h2>Country calling codes</h2><p>Override a prefix using the country’s two-letter ISO code.</p>

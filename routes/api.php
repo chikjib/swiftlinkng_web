@@ -251,7 +251,7 @@ require __DIR__.'/travel_services.php';
 
 require __DIR__.'/international.php';
 
-Route::middleware(['auth:api', 'admin.only', 'throttle:30,1'])->prefix('admin/internet')->group(function () {
+Route::middleware(['auth:api', 'admin.only', 'throttle:30,1,internet-admin:'])->prefix('admin/internet')->group(function () {
     Route::get('providers', [App\Http\Controllers\API\InternetAdminController::class, 'index']);
     Route::put('providers/{provider}', [App\Http\Controllers\API\InternetAdminController::class, 'updateProvider']);
     Route::get('providers/{provider}/packages', [App\Http\Controllers\API\InternetAdminController::class, 'packages']);

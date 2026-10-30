@@ -22,7 +22,7 @@ class InternetService
                 $key = strtolower(substr($s->description, 9));
                 try {
                     $plans = app(InternetAdmin::class)->apply($key, $this->providerPlans($key, $fresh));
-                    $result[] = ['id'=>$s->id,'title'=>$s->title,'network'=>$key,'status'=>1,'products'=>$plans];
+                    $result[] = ['id'=>$s->id,'title'=>$s->title,'network'=>$key,'status'=>1,'products'=>$plans,'logo'=>$plans[0]['logo'] ?? null,'fallback_logo'=>$plans[0]['fallback_logo'] ?? null];
                 } catch (\Throwable $e) {
                     Log::warning('internet.catalogue_unavailable', ['provider'=>$key,'error'=>$e->getMessage()]);
                     $result[] = ['id'=>$s->id,'title'=>$s->title,'network'=>$key,'status'=>1,'products'=>[], 'message'=>'Packages are temporarily unavailable. Please try again.'];
@@ -50,7 +50,7 @@ class InternetService
             }
             abort_unless(in_array($key,['spectranet','nitel'],true),422,'Select an Internet provider.');
             $plans = [];
-            foreach (app(Sochitel::class)->catalog($s,'NG',app(Sochitel::class)->protocol($s)==='artx'?'internet':'data',true) as $o) {
+            foreach (app(Sochitel::class)->catalog($s,'NG','internet',true) as $o) {
                 $name = strtolower($o['name']);
                 if ($key === 'spectranet' ? !str_contains($name,'spectranet') : !preg_match('/\b(nitel|ntel)\b/',$name)) continue;
                 foreach ($o['_products'] as $p) {
@@ -61,7 +61,7 @@ class InternetService
                     abort_unless($rate>0,503,'Configure the Sochitel conversion to NGN.');
                     $cost=round((float)$p['amount']['min']['user']*$rate,2);
                     $amount = (int)ceil(InternationalTopup::price($cost,$s->multiplier)/100);
-                    $plans[] = ['plan'=>$o['id'].':'.$p['id'],'name'=>$p['name'],'amount'=>$amount,'cost'=>$cost,'payload'=>['operator'=>(string)$o['_operator'],'product'=>(string)$p['id'],'currency'=>$o['currency'],'amount'=>(string)$p['amount']['min']['operator'], '_recipient_kind'=>(string)$p['type']==='3'?'accountId':'msisdn']];
+                    $plans[] = ['plan'=>$o['id'].':'.$p['id'],'name'=>$p['name'],'amount'=>$amount,'cost'=>$cost,'logo'=>$o['logo'],'fallback_logo'=>$o['fallback_logo'],'payload'=>['operator'=>(string)$o['_operator'],'product'=>(string)$p['id'],'currency'=>$o['currency'],'amount'=>(string)$p['amount']['min']['operator'], '_recipient_kind'=>(string)$p['type']==='3'?'accountId':'msisdn']];
                 }
             }
             return $plans;
@@ -84,6 +84,7 @@ class InternetService
             $provider=$key==='smile'?'vtpass':'sochitel';
             $ref=$provider==='vtpass'?$this->vtPassreferenceCode():'INT'.bin2hex(random_bytes(12));
             $payload=$provider==='vtpass'?['billersCode'=>$in['phonenumber'],'serviceID'=>'smile-direct','request_id'=>$ref,'variation_code'=>$plan['code'],'amount'=>$plan['cost'],'phone'=>$user->phone]:$plan['payload']+['recipient'=>$in['phonenumber'],'reference'=>$ref];
+            if ($provider === 'sochitel' && ($payload['_recipient_kind'] ?? '') === 'msisdn' && str_starts_with($payload['recipient'], '0')) $payload['recipient'] = '234'.substr($payload['recipient'], 1);
             if ($provider==='sochitel') $payload['_account']=app(Sochitel::class)->account(app(InternationalTopup::class)->settings());
             $row=DB::transaction(function() use($user,$in,$s,$plan,$provider,$ref,$payload,$key,$rawPlans) {
                 $current=collect(app(InternetAdmin::class)->apply($key,$rawPlans,true))->firstWhere('plan',$in['plan_id']);

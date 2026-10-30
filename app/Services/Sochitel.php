@@ -47,9 +47,9 @@ class Sochitel
             ->withOptions(['allow_redirects' => false])->connectTimeout(10)->timeout(50)
             ->withBody($payload, 'application/json')->send($method, $url);
         $data = $r->json();
-        if (!is_array($data) || !isset($data['errno'])) throw new \RuntimeException('Sochitel returned an unreadable response.');
+        if (!is_array($data) || !is_numeric($data['errno'] ?? null)) throw SochitelConnectionException::response($r->status());
         // Transaction failures can contain a valid transaction ID even on HTTP 4xx.
-        if (!$r->successful() && $path !== '/transaction') throw new \RuntimeException('Sochitel request failed. Check the account configuration or try again.');
+        if ($path !== '/transaction' && (!$r->successful() || (int) $data['errno'] !== 0)) throw SochitelConnectionException::response($r->status(), (int) $data['errno']);
         return $data;
     }
 
@@ -66,7 +66,8 @@ class Sochitel
     private function supported(array $p, string $type): bool
     {
         if ($type === 'internet') {
-            if (!in_array((string)($p['type'] ?? ''), ['3','4'], true) || (int)($p['category'] ?? 0) !== 6) return false;
+            if (!in_array((string)($p['type'] ?? ''), ['3','4'], true)) return false;
+            if ((int)($p['category'] ?? 0) !== 6 && !((string)($p['type'] ?? '') === '4' && (int)($p['category'] ?? 0) === 4)) return false;
         } elseif ((string) ($p['type'] ?? '') !== ($type === 'data' ? '4' : '1')) return false;
         // These screens collect only the recipient. Exclude products requiring additional inputs.
         foreach ((array) ($p['extraParameters'] ?? []) as $extra) {
@@ -105,8 +106,8 @@ class Sochitel
         foreach ($this->operators($s, $fresh, $this->protocol($s) === 'artx' ? ['country' => $country] + ($type === 'internet' ? ['productCategory' => '6.0'] : ['productType' => $type === 'data' ? 4 : 1]) : []) as $o) {
             if (($o['country'] ?? '') !== $country || !ctype_digit((string) ($o['id'] ?? ''))) continue;
             $products = array_values(array_filter($o['products'] ?? [], fn($p) => $this->supported($p, $type)));
-            $logo = $logos[$o['id']] ?? null;
-            $base = ['name' => $o['name'], 'logo' => $logo, 'fallback_logo' => null, 'currency' => $o['currency'], 'provider' => 'sochitel'];
+            $images = $this->operatorLogos($o, $logos[$o['id']] ?? null);
+            $base = ['name' => $o['name'], 'logo' => $images['logo'], 'fallback_logo' => $images['fallback_logo'], 'currency' => $o['currency'], 'provider' => 'sochitel'];
             if (in_array($type, ['data','internet'], true) && $products) {
                 $result[] = $base + ['id' => (int) $o['id'], 'min' => null, 'max' => null, 'plans' => array_map(fn($p) => ['amount' => $p['amount']['min']['operator'], 'name' => $p['name'], 'product_id' => (int) $p['id']], $products), '_operator' => $o['id'], '_products' => $products];
             } elseif ($type === 'airtime') {
@@ -119,6 +120,27 @@ class Sochitel
             }
         }
         return $result;
+    }
+
+    public function operatorLogos(array $operator, ?string $override = null): array
+    {
+        // The published REST schema does not promise logos. Use any optional
+        // metadata returned by an account, then our existing Nigerian assets.
+        $candidates = array_merge([$override, $operator['logo'] ?? null, $operator['logoUrl'] ?? null], (array) ($operator['logoUrls'] ?? []));
+        $remote = null;
+        foreach ($candidates as $url) {
+            if (!is_string($url) || !filter_var($url, FILTER_VALIDATE_URL)) continue;
+            $parts = parse_url($url);
+            if (($parts['scheme'] ?? '') === 'https' && !isset($parts['user']) && !isset($parts['pass'])) { $remote = $url; break; }
+        }
+        $fallback = null;
+        if (($operator['country'] ?? '') === 'NG') {
+            $name = strtolower($operator['name'] ?? '');
+            foreach (['spectranet' => 'internet_spectranet-transparent.png', 'ntel' => 'internet_nitel-transparent.png', 'nitel' => 'internet_nitel-transparent.png', 'smile' => 'internet_smile-transparent.png', 'mtn' => 'mtn.jpeg', 'airtel' => 'airtel.jpeg', 'glo' => 'glodata.jpeg', '9mobile' => '9mobile.jpeg', 't2 mobile' => '9mobile.jpeg', 'etisalat' => '9mobile.jpeg'] as $brand => $file) {
+                if (preg_match('/\b'.preg_quote($brand, '/').'\b/', $name)) { $fallback = '/template/images/services/'.$file; break; }
+            }
+        }
+        return ['logo' => $remote ?? $fallback, 'fallback_logo' => $fallback];
     }
 
     public function selection(object $s, array $in, bool $fresh = false): array

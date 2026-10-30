@@ -33,6 +33,26 @@ class InternetServiceTest extends \Tests\Support\InternationalApiTestCase
     {
         return ['subcategory_id'=>Subcategory::where('title','Smile')->value('id'),'plan_id'=>'123','amount'=>1000,'phonenumber'=>'08011111111','request_key'=>'internet-test-1','channel'=>'App'];
     }
+
+    public function test_rest_internet_catalogue_includes_bill_accounts_and_mobile_data(): void
+    {
+        config(['international.sochitel_base_url' => 'https://sochitel.test/api']);
+        DB::table('international_settings')->update(['sochitel_protocol' => 'rest', 'sochitel_user_id' => '123456', 'sochitel_private_key' => Crypt::encryptString(F::keys()['private']), 'sochitel_currency' => 'NGN']);
+        $price = ['type' => 'fixed', 'min' => ['operator' => 500, 'user' => 450], 'max' => ['operator' => 500, 'user' => 450]];
+        Http::fake(['*' => Http::response(['errno' => 0, 'operators' => [
+            ['id' => '7', 'name' => 'Spectranet', 'country' => 'NG', 'currency' => 'NGN', 'products' => [
+                ['id' => '11', 'name' => 'Internet account bundle', 'type' => '3', 'category' => '6.0', 'amount' => $price],
+                ['id' => '12', 'name' => 'Mobile bundle', 'type' => '4', 'category' => '4.0', 'amount' => $price],
+                ['id' => '13', 'name' => 'Cable TV', 'type' => '3', 'category' => '7.0', 'amount' => $price],
+            ]],
+        ]])]);
+        $plans = app(InternetService::class)->providerPlans('spectranet', true);
+        $this->assertSame(['7:11', '7:12'], array_column($plans, 'plan'));
+        $this->assertSame('accountId', $plans[0]['payload']['_recipient_kind']);
+        $this->assertSame('msisdn', $plans[1]['payload']['_recipient_kind']);
+        $this->assertSame('/template/images/services/internet_spectranet-transparent.png', $plans[0]['logo']);
+        Http::assertSent(fn ($request) => $request->method() === 'GET' && $request->url() === 'https://sochitel.test/api/operators');
+    }
     protected function smileFake(string $status = 'delivered', bool $timeout = false): void
     {
         Http::fake(function($r) use($status,$timeout) {

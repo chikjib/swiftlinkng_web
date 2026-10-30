@@ -69,6 +69,50 @@ class SochitelApiTest extends \Tests\Support\InternationalApiTestCase
         });
         $this->assertCount(2, $seen);
     }
+
+    public function test_admin_page_requests_do_not_exhaust_the_connection_test_limit(): void
+    {
+        $this->login(1);
+        for ($i = 0; $i < 6; $i++) $this->getJson('/api/admin/international/settings')->assertOk();
+        for ($i = 0; $i < 5; $i++) $this->postJson('/api/admin/international/sochitel/test')->assertOk();
+        $response = $this->postJson('/api/admin/international/sochitel/test')->assertStatus(429)->assertHeader('Retry-After');
+        $this->assertStringContainsString('Too many Sochitel connection tests.', $response->json('message'));
+        $this->getJson('/api/admin/international/settings')->assertOk();
+    }
+
+    public function test_admin_sees_safe_rest_authentication_and_endpoint_diagnostics(): void
+    {
+        $this->login(1);
+        foreach ([
+            [Http::response('<html>Not Found</html>', 404), 'SOCHITEL_BASE_URL'],
+            [Http::response(['errno' => 9, 'error' => 'secret provider text'], 401), 'RSA signature was rejected'],
+            [Http::response(['errno' => 10], 401), 'public IP address'],
+        ] as [$response, $expected]) {
+            Http::swap(new \Illuminate\Http\Client\Factory());
+            Http::preventStrayRequests();
+            Http::fake(['*' => $response]);
+            $result = $this->postJson('/api/admin/international/sochitel/test')->assertStatus(422);
+            $this->assertStringContainsString($expected, $result->json('message'));
+            $this->assertStringNotContainsString('secret provider text', $result->getContent());
+            $this->assertNull(DB::table('international_settings')->value('sochitel_verified_at'));
+        }
+    }
+
+    public function test_operator_logos_use_provider_metadata_overrides_and_country_scoped_fallbacks(): void
+    {
+        $provider = app(Sochitel::class);
+        $operator = ['id' => '7', 'country' => 'NG', 'name' => 'Nigeria MTN', 'logo' => 'https://cdn.example.com/mtn.png'];
+        $images = $provider->operatorLogos($operator);
+        $this->assertSame('https://cdn.example.com/mtn.png', $images['logo']);
+        $this->assertSame('/template/images/services/mtn.jpeg', $images['fallback_logo']);
+        $this->assertSame('https://custom.example.com/mtn.png', $provider->operatorLogos($operator, 'https://custom.example.com/mtn.png')['logo']);
+        $operator['logo'] = 'javascript:alert(1)';
+        $this->assertSame('/template/images/services/mtn.jpeg', $provider->operatorLogos($operator)['logo']);
+        $operator['country'] = 'GH';
+        $this->assertNull($provider->operatorLogos($operator)['logo']);
+        $operator['logoUrls'] = ['http://unsafe.example.com/logo.png', 'https://cdn.example.com/ghana.png'];
+        $this->assertSame('https://cdn.example.com/ghana.png', $provider->operatorLogos($operator)['logo']);
+    }
     public function test_catalog_country_search_metadata_and_distinct_named_products(): void
     {
         $this->login();
