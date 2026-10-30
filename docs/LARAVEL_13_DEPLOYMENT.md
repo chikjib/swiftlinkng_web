@@ -229,6 +229,32 @@ pre-upgrade backup: restarting the entire workflow may create another archive
 of the partially deployed code. An SSH post-quantum warning is separate from
 a PHP extension error.
 
+### Existing referral rewards table
+
+If migration `2026_08_02_000002_create_referral_rewards_table` is pending but
+`referral_rewards` already exists from the July migration, do not drop the table
+or manually insert a migration-history row. The corrected August migration
+recognizes the existing ledger, checks its required columns and unique reward
+key, widens the legacy fields, sets the commission default, and adds the combined
+beneficiary/type index. Existing rows and their IDs remain in place. Wider
+existing fields are retained. An unexpected schema stops with a review error.
+
+Before retrying, take and verify a database backup, keep workers/cron stopped,
+and keep maintenance enabled. Schema changes on a populated MySQL table may
+take time and lock the table. Upload the corrected migration from this repository
+without replacing `.env`, keys, or storage. Then, from the live Laravel folder:
+
+```bash
+bash scripts/deploy-finish.sh "$PWD" /usr/local/bin/ea-php84
+/usr/local/bin/ea-php84 artisan migrate:status
+```
+
+The finish script records the migration on success and reopens the application
+only after its remaining checks pass. This migration refuses automatic rollback
+to protect the financial ledger; use a reviewed forward fix for schema recovery.
+Editing it addresses installations where that migration is still pending;
+installations that already recorded it will not rerun it.
+
 Keep cron/workers stopped and the site in maintenance while deciding what to do.
 Record the failed step and whether migrations or `passport:hash` ran.
 
