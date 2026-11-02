@@ -131,6 +131,7 @@ class Sochitel
         foreach ($this->operators($s, $fresh, $this->protocol($s) === 'artx' ? ['country' => $country] + ($type === 'internet' ? [] : ['productType' => $type === 'data' ? 4 : 1]) : []) as $o) {
             if (($o['country'] ?? '') !== $country || !ctype_digit((string) ($o['id'] ?? ''))) continue;
             $products = array_values(array_filter($o['products'] ?? [], fn($p) => $this->supported($p, $type)));
+            if ($type === 'airtime') $products = $this->airtimeProducts($o, $products);
             $images = $this->operatorLogos($o, $logos[$o['id']] ?? null);
             $base = ['name' => $o['name'], 'logo' => $images['logo'], 'fallback_logo' => $images['fallback_logo'], 'currency' => $o['currency'], 'provider' => 'sochitel'];
             if (in_array($type, ['data','internet'], true) && $products) {
@@ -145,6 +146,77 @@ class Sochitel
             }
         }
         return $result;
+    }
+
+    private function airtimeProducts(array $operator, array $products): array
+    {
+        // Nigeria's selected offers deliberately retain the GISTPLUS bands
+        // alongside MTN's broad range. Do not collapse these explicit choices.
+        if (($operator['country'] ?? '') === 'NG' && ($operator['currency'] ?? '') === 'NGN') {
+            $name = strtolower($operator['name'] ?? '');
+            $preferred = null;
+            if (preg_match('/\bairtel\b/', $name)) $preferred = [[50, 150000, false]];
+            elseif (preg_match('/\bglo\b/', $name)) $preferred = [[10, 150000, false]];
+            elseif (preg_match('/\bmtn\b/', $name)) $preferred = [[5, 150000, false], [1, 99, true], [100, 999, true], [1000, 5000, true]];
+            if ($preferred !== null) {
+                $selected = [];
+                foreach ($preferred as [$min, $max, $gistplus]) {
+                    $matches = array_filter($products, function ($product) use ($min, $max, $gistplus) {
+                        return $product['amount']['type'] === 'range'
+                            && (float) $product['amount']['min']['operator'] === (float) $min
+                            && (float) $product['amount']['max']['operator'] === (float) $max
+                            && (bool) preg_match('/gist\s*plus/i', $product['name'] ?? '') === $gistplus;
+                    });
+                    // Stable selection if a provider repeats an approved band.
+                    usort($matches, fn($a, $b) => (int) $a['id'] <=> (int) $b['id']);
+                    if ($matches) $selected[] = $matches[0];
+                }
+                // Preserve provider order for the explicitly selected offers.
+                $ids = array_column($selected, 'id');
+                $seen = [];
+                return array_values(array_filter($products, function ($p) use ($ids, &$seen) {
+                    $id = (string) $p['id'];
+                    if (!in_array($p['id'], $ids, true) || isset($seen[$id])) return false;
+                    $seen[$id] = true;
+                    return true;
+                }));
+            }
+        }
+
+        // Prefer ranges covering more amounts. A fixed denomination or smaller
+        // range wholly covered by a retained range adds no selectable amount.
+        // Partial overlaps remain: dropping them would remove unique coverage.
+        $ranked = $products;
+        usort($ranked, function ($a, $b) {
+            $aRange = $a['amount']['type'] === 'range';
+            $bRange = $b['amount']['type'] === 'range';
+            if ($aRange !== $bRange) return $aRange ? -1 : 1;
+            $aWidth = (float) $a['amount']['max']['operator'] - (float) $a['amount']['min']['operator'];
+            $bWidth = (float) $b['amount']['max']['operator'] - (float) $b['amount']['min']['operator'];
+            return ($bWidth <=> $aWidth) ?: ((int) $a['id'] <=> (int) $b['id']);
+        });
+        $selected = [];
+        foreach ($ranked as $product) {
+            $min = (float) $product['amount']['min']['operator'];
+            $max = (float) $product['amount']['max']['operator'];
+            $covered = false;
+            foreach ($selected as $existing) {
+                if ((string) $existing['id'] === (string) $product['id'] ||
+                    ((float) $existing['amount']['min']['operator'] <= $min && (float) $existing['amount']['max']['operator'] >= $max)) {
+                    $covered = true;
+                    break;
+                }
+            }
+            if (!$covered) $selected[] = $product;
+        }
+        $ids = array_column($selected, 'id');
+        $seen = [];
+        return array_values(array_filter($products, function ($product) use ($ids, &$seen) {
+            $id = (string) $product['id'];
+            if (!in_array($product['id'], $ids, true) || isset($seen[$id])) return false;
+            $seen[$id] = true;
+            return true;
+        }));
     }
 
     public function operatorLogos(array $operator, ?string $override = null): array

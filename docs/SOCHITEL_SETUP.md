@@ -46,6 +46,12 @@ The connection test now has its own limit of five tests per minute. Loading sett
 
 Connection failures show safe HTTP/provider codes and guidance: invalid endpoint, RSA key/user ID, blocked source IP or server clock. Raw provider bodies, credentials and signatures are not exposed. Transaction ambiguity still remains pending for reconciliation, without automatic resubmission.
 
+## Airtime catalogue filtering
+
+Nigeria Airtel retains the 50–150,000 NGN range; Glo retains 10–150,000 NGN. MTN retains 5–150,000 NGN and the GISTPLUS 1–99, 100–999 and 1,000–5,000 NGN bands selected in the reference screenshots. Airtel Talkmore, MTN's overlapping 5–100,000 range and the additional fixed denominations are excluded. T2 Mobile uses the general uniqueness filter.
+
+For other operators/countries, identical ranges are deduplicated, narrower ranges wholly covered by wider ones are removed, and fixed amounts already covered by a retained range are excluded. Equal ranges/denominations use the lowest provider product ID for a stable selection. Partially overlapping or disjoint ranges remain when needed to retain otherwise unavailable top-up amounts. Original provider prices, amount bounds and IDs are preserved; data/Internet product filtering is unchanged. The same filtered catalogue validates preview and purchase selections, while reconciliation of dispatched purchases continues to use their frozen payloads.
+
 ## Operator logos
 
 The linked public REST documentation does not list a logo field or logo endpoint. The integration accepts optional HTTPS `logo`, `logoUrl` or `logoUrls` metadata if an account returns it. Admin operator-ID overrides take precedence. Recognized Nigerian brands use bundled logos when remote images are absent or fail; no Nigerian logo is assigned to an operator in another country.
