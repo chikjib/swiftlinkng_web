@@ -15,6 +15,7 @@ import moment from "moment";
 
 import axios from "axios";
 import Auth from "./Auth.js";
+import { installAuthentication } from "./authentication";
 import { installTransactionSecurity } from "./transactionSecurity";
 
 import VueHtmlToPaper from "vue-html-to-paper";
@@ -28,6 +29,7 @@ configureCompat({
     OPTIONS_DESTROYED: "suppress-warning",
 });
 
+installAuthentication(axios, Auth);
 installTransactionSecurity(axios);
 
 const options = {
@@ -38,25 +40,6 @@ const options = {
         "https://unpkg.com/kidlat-css/css/kidlat.css",
     ],
 };
-
-axios.interceptors.response.use(
-  response => response, // if response is fine, return it
-  error => {
-    if (error.response && error.response.status === 401) {
-      console.warn("⚠️ Session expired or unauthorized. Logging out...");
-
-      Auth.logout();
-
-    //   // optional: also request logout API if you want server cleanup
-    //   axios.post("/api/logout").catch(() => {});
-
-      // redirect to login page
-      window.location.href = "/login";
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 import App from "./app.vue";
 import router from "./routes";

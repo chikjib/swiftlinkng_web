@@ -193,6 +193,23 @@ before replacing code, preserve the same files, and perform the commands in
 `scripts/deploy-finish.sh` only after the new locked vendor directory is installed.
 Never execute the preparation/finish scripts against your local development app.
 
+### Login succeeds but immediately returns to the login page
+
+When the domain serves the repository root and rewrites requests to `server.php`,
+the authorization rule in `public/.htaccess` is bypassed. PHP/FastCGI may then
+receive no bearer token, so the first authenticated dashboard API request returns
+401 and the browser clears its login. Keep the following rule immediately after
+`RewriteEngine On` in the root `.htaccess`, as well as the existing public rule:
+
+```apache
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+```
+
+Preserve cPanel's generated PHP handler and INI sections when applying this fix.
+Verify with a fresh browser login, a dashboard refresh, and navigation to another
+authenticated page. This fix requires no key rotation or session/token deletion.
+
 ## 5. Rollback
 
 If Artisan reports `Fruitcake\Cors\CorsServiceProvider` missing after a partial

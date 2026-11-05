@@ -5,6 +5,11 @@
     </ifmodule>
      
     RewriteEngine On
+
+    # Requests rewritten to server.php do not pass through public/.htaccess.
+    # Forward bearer tokens to PHP/FastCGI for Passport authentication here too.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
      
     RewriteCond %{REQUEST_FILENAME} -d [OR]
     RewriteCond %{REQUEST_FILENAME} -f
