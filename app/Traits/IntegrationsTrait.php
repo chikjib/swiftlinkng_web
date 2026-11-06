@@ -2111,7 +2111,9 @@ public function gtechPortal($network_id, $phone, $plan_id)
                 "phone_number" => $phone,
                 "action" => "vend",
                 "user_reference" => $ref,
-                "bypass_network" => "yes"
+                "bypass_network" => "yes",
+                "async" => false,
+                "callback" => "https://swiftlinkng.com/integrity-portal-webhook"
             ]);
         return $response->json();
     }

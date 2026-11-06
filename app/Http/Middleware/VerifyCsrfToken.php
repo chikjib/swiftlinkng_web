@@ -32,6 +32,7 @@ class VerifyCsrfToken extends Middleware
         'amakasub-webhook',
         'coolsub-webhook',
         'zoe-data-webhook',
+        'integrity-portal-webhook',
         'sim-server-webhook',
 
     ];

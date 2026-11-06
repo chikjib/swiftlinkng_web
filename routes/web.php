@@ -96,6 +96,7 @@ Route::webhooks('opay-wallet-webhook', 'opay-wallet-webhook')
 Route::webhooks('budpay-webhook', 'budpay-webhook');
 Route::webhooks('coolsub-webhook', 'coolsub-webhook');
 Route::webhooks('zoe-data-webhook', 'zoe-data-webhook');
+Route::webhooks('integrity-portal-webhook', 'integrity-portal-webhook');
 Route::webhooks('sim-server-webhook', 'sim-server-webhook');
 
 //MTN SME (WEBSITE)
