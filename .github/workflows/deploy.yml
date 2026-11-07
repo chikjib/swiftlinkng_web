@@ -95,11 +95,14 @@ jobs:
       - name: Upload application while maintenance is enabled
         shell: bash
         run: |
+          # cPanel owns the root PHP handler/INI blocks. Keep the live routing
+          # file (including bearer-token forwarding) instead of overwriting it.
           rsync -az --delay-updates \
             -e "ssh -i $HOME/.ssh/swiftlink_deploy -p $CPANEL_PORT -o BatchMode=yes -o StrictHostKeyChecking=yes" \
             --exclude='.git/' --exclude='.github/' --exclude='.env*' \
             --exclude='.cpanel.yml' --exclude='.ftp-deploy-sync-state.json' \
             --exclude='.ftpquota' --exclude='.user.ini' --exclude='php.ini' \
+            --exclude='/.htaccess' \
             --exclude='cookie*.txt' --exclude='node_modules/' \
             --exclude='public/hot' --exclude='public/storage' \
             --exclude='storage/' --exclude='bootstrap/cache/*.php' \

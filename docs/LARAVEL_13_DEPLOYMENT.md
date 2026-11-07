@@ -207,6 +207,12 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 ```
 
 Preserve cPanel's generated PHP handler and INI sections when applying this fix.
+The deployment upload now preserves the live root `.htaccess`, just as it
+preserves `.user.ini` and `php.ini`. Review and apply future root rewrite changes
+separately through cPanel; the file is no longer replaced by rsync. For a new
+installation, create the root routing file and select PHP 8.4 through MultiPHP
+Manager before deploying. Use MultiPHP INI Editor for PHP settings so its three
+generated configuration files remain consistent.
 Verify with a fresh browser login, a dashboard refresh, and navigation to another
 authenticated page. This fix requires no key rotation or session/token deletion.
 
