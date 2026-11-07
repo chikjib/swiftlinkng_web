@@ -52,39 +52,38 @@ class MtnDirectAppController extends Controller
         $otp = $request->otp;
         $response = $this->ValidateOTP($otp, $phone_number);
 
-        if ($response) {
-            $responseData = json_decode($response, true);
+        $responseData = is_string($response) ? json_decode($response, true) : null;
+        if (!is_array($responseData)
+            || !is_string($responseData['access_token'] ?? null) || $responseData['access_token'] === ''
+            || !is_string($responseData['refresh_token'] ?? null) || $responseData['refresh_token'] === ''
+            || !is_numeric($responseData['expires_in'] ?? null) || $responseData['expires_in'] <= 0) {
+            return view("mtn_direct_app.mtn_failed_login_app", [
+                'response' => 'MTN did not return valid login credentials. Please request a new OTP and try again.',
+            ]);
+        }
 
-            // Access the token
-            $accessToken = $responseData['access_token'];
-            $refreshToken = $responseData['refresh_token'];
-            $expires_in = $responseData['expires_in'];
+        \DB::transaction(function () use ($phone_number, $responseData) {
+            $login = MtnLogin::updateOrCreate(['phone_number' => $phone_number], [
+                'mtn_access_token' => $responseData['access_token'],
+                'mtn_refresh_token' => $responseData['refresh_token'],
+                'expires_in' => $responseData['expires_in'],
+            ]);
 
-            if(MtnLogin::where('phone_number',$phone_number)->exists()){
-                MtnLogin::where('status',1)->update(['mtn_access_token' => $accessToken, 'mtn_refresh_token' => $refreshToken, 'phone_number' => $phone_number, "expires_in" => $expires_in]);
-            }else {
-                $login_data = MtnLogin::create([
-                    "phone_number" => $phone_number,
-                    "mtn_access_token" => $accessToken,
-                    "mtn_refresh_token" => $refreshToken,
-                    "expires_in" => $expires_in
-                ]);
-                // \Log::info($login_data->id);
-
+            // Re-authentication must also repair a missing balance row without
+            // resetting the balance already stored for this account.
+            if (!\DB::table('mtn_balance')->where('mtn_login_id', $login->id)->exists()) {
                 \DB::table('mtn_balance')->insert([
-                    "mtn_login_id" => $login_data->id,
-                    "created_at" => now(),
-                    "updated_at" => now()
+                    'mtn_login_id' => $login->id,
+                    'balance' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
+        });
 
-
-            return view("mtn_direct_app.mtn_success_login_app", ['response' => $response]);
-
-        } else {
-            return view("mtn_direct_app.mtn_failed_login_app", ['response' => "An error occurred"]);
-
-        }
+        return view("mtn_direct_app.mtn_success_login_app", [
+            'response' => 'MTN number saved successfully.',
+        ]);
     }
 
     public function makeAccountActive()

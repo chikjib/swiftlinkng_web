@@ -133,16 +133,16 @@ Route::get('/mtn-sme-app-account-active',[App\Http\Controllers\MtnSmeAppControll
 
 //MTN DIRECT (APP)
 Route::get('/mtn-direct-app-login',[App\Http\Controllers\MtnDirectAppController::class,
-'automationLoginView'])->name('automationLoginViewApp');
+'automationLoginView'])->name('automationLoginViewDirectApp');
 
 Route::post('/mtn-direct-app-generate-otp',[App\Http\Controllers\MtnDirectAppController::class,
-'generateMtnOtp'])->name('generateMtnOtpApp');
+'generateMtnOtp'])->name('generateMtnOtpDirectApp');
 
 Route::post('/mtn-direct-app-validate-otp',[App\Http\Controllers\MtnDirectAppController::class,
-'validateMtnOtp'])->name('validateMtnOtpApp');
+'validateMtnOtp'])->name('validateMtnOtpDirectApp');
 
 Route::get('/mtn-direct-app-account-active',[App\Http\Controllers\MtnDirectAppController::class,
-'makeAccountActive'])->name('makeAccountActiveApp');
+'makeAccountActive'])->name('makeAccountActiveDirectApp');
 
 
 // MTN CG

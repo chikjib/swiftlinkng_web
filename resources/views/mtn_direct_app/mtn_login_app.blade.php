@@ -16,7 +16,7 @@
 
               <form
                 method="POST"
-                action="{{ route('generateMtnOtpApp') }}"
+                action="{{ route('generateMtnOtpDirectApp') }}"
                 class="sign-in__form"
               >
               @csrf

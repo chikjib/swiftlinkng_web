@@ -16,7 +16,7 @@
                 {{ $otp_result }}
               <form
                 method="POST"
-                action="{{ route('validateMtnOtpApp') }}"
+                action="{{ route('validateMtnOtpDirectApp') }}"
                 class="sign-in__form"
               >
               @csrf
