@@ -4116,6 +4116,135 @@ class OrderController extends BaseController
                         return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $response->data->msg);
                     }
                 }
+
+                else if($subcategory->id == 2 && strtolower($plan) == strtolower("GET 1GB FOR 1 DAY")){
+                    $network_id = $this->parseAutoPilotNetworkID(strtolower($network));
+                    $product_id = isset($getSelectedProduct->product_id) ? $getSelectedProduct->product_id : null;
+                    $variation_code = isset($getSelectedProduct->variation_code) ? $getSelectedProduct->variation_code : null;
+                    $pin = isset($getSelectedProduct->pin) ? $getSelectedProduct->pin : null;
+                    
+                    $order = new Order();
+                    $order->ref = $ref;
+                    $order->custom_reference = $custom_reference;
+                    $order->user_id = $this->user->id;
+                    $order->subcategory_id = $subcategory->id;
+                    $order->plan = $subcategory->title . " " . $plan . " at N" . $amount;
+                    $order->amount = $amountActual;
+                    $order->quantity = 1;
+                    $order->channel = is_null($request->channel) ? 'Web' : 'App';
+                    $order->data_size = $getSelectedProduct->data_size;
+                    $order->cost_price = $getSelectedProduct->cost_price ?? 0.00;
+                    $order->api_route = $subcategory->description;
+                    $order->subtotal = $amountActual;
+                    $order->total = $amountActual;
+                    $order->phone = $phone;
+                    $order->bal = $bal;
+                    $order->prev_bal = $prev;
+                    $order->description = $subcategory->title . " " . $plan .
+                        " at N" . $amountActual;
+                    $order->status = 0;
+                    $order->save();
+
+                    try {
+                        $response = $this->autoSyncPortal($ref,$phone,$product_id,$variation_code,$pin);
+    
+                    } catch (\Throwable $e) {
+                        return $this->sendProviderConnectionPending($e, $ref, $custom_reference);
+                    }
+    
+    
+                    \Log::info("AUTOSYNCAwuf RESPONSE UNDER VTUPLUGPORTAL");
+                    \Log::info(print_r($response, true));
+    
+                    if (!isset($response) || is_null($response)) {
+    
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+    
+                    }elseif (isset($response['data']) && isset($response['data']['transaction']) && $response['data']['transaction']['status'] == "pending"){
+                        return $this->sendError2($ref, $custom_reference, "Transaction pending", "Transaction pending");
+                    }elseif(isset($response['status']) && $response['status'] == "error"){
+                        $response_msg = isset($response['message']) ? $response['message'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+    
+                        $msg = $response['message'];
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->variation_code, $ref, $subcategory->telegram, $msg);
+    
+                        $resp_msg = $response_msg;
+    
+                        //   if($response['data']['message'] == "You may have exhaust all sender number limit"){
+                        //         Subcategory::find(48)->update(['status' => 0]);
+                        //   }
+    
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $msg, "Transaction failed: " . $msg);
+                    } elseif (isset($response['data']) && isset($response['data']['transaction']) && $response['data']['transaction']['status'] == "failed") {
+                        $response_msg = isset($response['data']['transaction']['details']) ? $response['data']['transaction']['details'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->variation_code, $ref, $subcategory->telegram);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+                        
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $resp_msg, "Transaction failed: " . $resp_msg);
+                    }  elseif (isset($response['data']) && isset($response['data']['transaction']) && $response['data']['transaction']['details'] == "No Memo..") {
+                        $response_msg = isset($response['data']['transaction']['details']) ? $response['data']['transaction']['details'] : null;
+                        
+                        $this->refundUser(
+                            $ref,
+                            $response_msg,
+                            $amountActual,
+                            [
+                                'bal' => $prev,
+                                'prev_bal' => $bal
+                            ]
+                        );
+                        
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->variation_code, $ref, $subcategory->telegram);
+    
+                        $resp_msg = "Data is not available,please try again later";
+    
+    
+                        return $this->sendError3($ref, $custom_reference, $resp_msg, "Transaction failed: " . $resp_msg, "Transaction failed: " . $resp_msg);
+                    } else {
+    
+                        
+                        $updateOrder = Order::where('ref', $ref)->first();
+                        $updateOrder->status = 1;
+                        $updateOrder->response = $response['data']['transaction']['details'];
+                        $updateOrder->save();
+                        $msg1 = $response['data']['transaction']['details'];
+                        $msg = $msg1 . " AutoSync Ref: " . $response['data']['transaction']['reference'];
+                        $this->processReferralRewards($updateOrder);
+    
+    
+                        $this->sendTelegramMessage($amount, $phone, $subcategory->pins, $getSelectedProduct->variation_code, $ref, $subcategory->telegram, $msg);
+    
+                        return $this->sendResponse2($ref, $custom_reference, $amountActual, $plan . " Purchase successful", $msg1);
+                    }
+                
+                }
+                
                 else{
                     // $network_id = $getSelectedProduct->subarena_network_id;
                 // $plan_id = $getSelectedProduct->code;
