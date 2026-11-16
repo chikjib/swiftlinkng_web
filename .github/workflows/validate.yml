@@ -26,11 +26,12 @@ jobs:
         run: composer validate --strict
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist --no-scripts
-      - name: Check runtime and dependencies
-        run: |
-          composer check-platform-reqs
-          composer audit
-          php artisan package:discover --env=testing --ansi
+      - name: Check PHP platform requirements
+        run: composer check-platform-reqs
+      - name: Audit Composer dependencies
+        run: composer audit
+      - name: Discover Laravel packages
+        run: php artisan package:discover --env=testing --ansi
       - name: Run isolated PHP tests
         run: vendor/bin/phpunit --fail-on-warning --fail-on-risky --fail-on-phpunit-notice
       - name: Check PHP syntax
