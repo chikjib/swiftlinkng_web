@@ -4153,7 +4153,7 @@ class OrderController extends BaseController
                     }
     
     
-                    \Log::info("AUTOSYNCAwuf RESPONSE UNDER VTUPLUGPORTAL");
+                    \Log::info("AUTOSYNCAwuf RESPONSE UNDER MTNDIRECT");
                     \Log::info(print_r($response, true));
     
                     if (!isset($response) || is_null($response)) {
