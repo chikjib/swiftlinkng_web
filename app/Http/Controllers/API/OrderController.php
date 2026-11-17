@@ -1061,7 +1061,7 @@ class OrderController extends BaseController
     }
        
 
-    public function purchaseData(Request $request)
+    public function purchaseData(Request $request, bool $fibreInternet = false)
     {
         
         
@@ -1097,7 +1097,8 @@ class OrderController extends BaseController
         $amount = $request->amount;
         
         
-        if (!preg_match('/^(0\d{10}|\+234\d{10}|234\d{10})$/', $request->phonenumber)) {
+        $isPhoneNumber = preg_match('/^(0\d{10}|\+234\d{10}|234\d{10})$/', $request->phonenumber);
+        if (!$fibreInternet && !$isPhoneNumber) {
             return $this->sendError(
                 'Invalid phone number format',
                 'Phone number must be 11 digits starting with 0, or start with +234 / 234 followed by 10 digits.'
@@ -1105,7 +1106,7 @@ class OrderController extends BaseController
         } 
 
 
-        $phone = $this->formatPhoneNumber($request->phonenumber);
+        $phone = $isPhoneNumber ? $this->formatPhoneNumber($phone1) : $phone1;
         
         
         $ref = $this->referenceCode();
@@ -1145,7 +1146,7 @@ class OrderController extends BaseController
             return $this->sendError('Phone Number is required', 'Phone Number is required');
         }
         
-        if (strlen($request->phonenumber) < 11) {
+        if (!$fibreInternet && strlen($request->phonenumber) < 11) {
             return $this->sendError('Phone Number cannot be less than 11 digits', 'Phone Number cannot be less than 11 digits');
         }
 

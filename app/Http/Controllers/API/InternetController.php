@@ -10,9 +10,13 @@ class InternetController extends BaseController {
         return response()->json(['data'=>$data])->header('Cache-Control','no-store');
     }
     public function purchase(Request $r, InternetService $service) {
-        $in=$r->validate(['subcategory_id'=>'required|integer','plan_id'=>'required|string|max:255','phonenumber'=>'required|string|regex:/^[0-9]{6,20}$/','amount'=>'required|numeric|min:1','request_key'=>'required|string|max:100|regex:/^[a-zA-Z0-9-]+$/','channel'=>'nullable|in:App,Web']);
+        $in=$r->validate(['subcategory_id'=>'required|integer','plan_id'=>'required|string|max:255','phonenumber'=>'required|string','amount'=>'required|numeric|min:1','request_key'=>'required|string|max:100|regex:/^[a-zA-Z0-9-]+$/','channel'=>'nullable|in:App,Web']);
         $s=Subcategory::where('status',1)->findOrFail($in['subcategory_id']);
-        if ($s->description==='AUTOSYNCAWUF') {
+        $isFibre = $s->description === 'AUTOSYNCAWUF';
+        $r->validate([
+            'phonenumber' => $isFibre ? 'regex:/\A[a-zA-Z0-9]{6,20}\z/' : 'regex:/\A[0-9]{6,20}\z/',
+        ], ['phonenumber.regex' => 'Enter a valid Smart Number.']);
+        if ($isFibre) {
             $plan=collect(json_decode($s->products,true)?:[])->firstWhere('plan',$in['plan_id']);
             abort_unless($plan && InternetService::isFibre($s->title.' '.$plan['plan']),422,'Select a Fibre X package.');
             $expected=app(\App\Services\InternetAdmin::class)->fibrePrice($s,$plan,(int)$this->user->userlevel);
@@ -23,7 +27,7 @@ class InternetController extends BaseController {
                 if (!$order) {
                     $r->merge(['ported'=>true,'custom_reference'=>$in['request_key']]);
                     $controller=app(OrderController::class); $controller->user=$this->user;
-                    $response=$controller->purchaseData($r);
+                    $response=$controller->purchaseData($r, fibreInternet: true);
                     $order=\App\Models\Order::where('user_id',$this->user->id)->where('custom_reference',$in['request_key'])->first();
                     if (!$order) return $response;
                 }

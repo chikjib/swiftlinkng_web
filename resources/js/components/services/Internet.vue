@@ -8,7 +8,24 @@
           <img class="internet-brand" :src="providerLogo(network.key)" :alt="network.label" @error="logoFailed($event, network.key)" /><span>{{ network.label }}</span>
         </button>
       </div></section>
-      <div class="swift-form-group"><label for="internet-number">Smart Number</label><div class="swift-field-wrap"><i class="fas fa-mobile-alt"></i><input id="internet-number" v-model="number" required inputmode="numeric" pattern="[0-9]{6,20}" maxlength="20" class="form-control" placeholder="0801 234 5678" :disabled="busy || pending" @input="number = number.replace(/\D/g, '')" /></div></div>
+      <div class="swift-form-group">
+        <label for="internet-number">Smart Number</label>
+        <div class="swift-field-wrap">
+          <i class="fas fa-mobile-alt"></i>
+          <input
+            id="internet-number"
+            :value="number"
+            required
+            :inputmode="isFibre ? 'text' : 'numeric'"
+            :pattern="isFibre ? '[a-zA-Z0-9]{6,20}' : '[0-9]{6,20}'"
+            maxlength="20"
+            class="form-control"
+            :placeholder="isFibre ? 'e.g. ABC12345' : '0801 234 5678'"
+            :disabled="busy || pending"
+            @input="updateSmartNumber"
+          />
+        </div>
+      </div>
       <div class="swift-form-group"><label>Select Package</label><button class="swift-app-picker" type="button" aria-haspopup="dialog" :disabled="loading || busy || pending || !plans.length" @click="picker = true"><span class="swift-app-picker-icon"><i class="fas fa-layer-group"></i></span><strong>{{ plan ? (plan.name || plan.plan) : loading ? 'Loading packages…' : 'Select Package' }}</strong><i class="fas fa-chevron-down"></i></button><small v-if="!loading && !plans.length">Packages are temporarily unavailable. <button type="button" class="btn btn-link p-0" @click="load">Retry</button></small></div>
       <div class="swift-form-group"><label for="internet-amount">Amount</label><div class="swift-field-wrap"><i class="far fa-credit-card"></i><input id="internet-amount" :value="plan ? '₦' + plan.amount.toLocaleString() : ''" readonly class="form-control" placeholder="Amount" /></div></div>
       <button class="swift-primary-action" type="submit" :disabled="busy || loading || pending || !plan">{{ busy ? 'Processing…' : pending ? 'Purchase Pending — Check Transactions' : 'Buy Now' }}</button>
@@ -24,11 +41,18 @@ const newKey = () => globalThis.crypto?.randomUUID?.() || `internet-${Date.now()
 export default {
   data: () => ({ selected: '', number: '', plan: null, catalogue: [], loading: true, busy: false, pending: false, picker: false, message: '', failed: false, requestKey: newKey(), networks: [{key:'fibrex',label:'Fibre X'},{key:'smile',label:'Smile'},{key:'spectranet',label:'Spectranet'},{key:'nitel',label:'Nitel'}] }),
   computed: {
+    isFibre() { return this.selected === 'fibrex'; },
     plans() { return this.catalogue.filter(p => p.network === this.selected).flatMap(p => (p.products || []).map(plan => ({...plan, subcategory_id:p.id}))); },
     selectedLabel() { return this.networks.find(n => n.key === this.selected)?.label || ''; },
   },
   mounted() { this.load(); },
   methods: {
+    updateSmartNumber(event) {
+      const input = event.target;
+      const value = this.isFibre ? input.value : input.value.replace(/\D/g, '');
+      if (value !== input.value) input.value = value;
+      this.number = value;
+    },
     providerLogo(key) { const logo=this.catalogue.find(p => p.network === key)?.logo; return typeof logo === 'string' && (logo.startsWith('https://') || logo.startsWith('/template/images/services/')) ? logo : `/template/images/services/internet_${key}-transparent.png`; },
     logoFailed(event, key) { const fallback=`/template/images/services/internet_${key}-transparent.png`; if (!event.target.src.endsWith(fallback)) event.target.src=fallback; else event.target.style.display='none'; },
     headers() { return {Authorization:`Bearer ${localStorage.getItem('token')}`,Accept:'application/json'}; },

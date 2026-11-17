@@ -127,6 +127,62 @@ class InternetServiceTest extends \Tests\Support\InternationalApiTestCase
         $this->postJson('/api/purchase/internet',$this->input())->assertStatus(422);
         $this->assertSame(0,DB::table('orders')->count());
     }
+
+    public function test_fibre_purchase_sends_the_alphanumeric_smart_number_to_autosync(): void
+    {
+        Schema::create('bucket', function (Blueprint $table) {
+            $table->string('title');
+        });
+        Schema::table('orders', function (Blueprint $table) {
+            $table->string('data_size')->nullable();
+        });
+        $fibre = Subcategory::create([
+            'category_id' => 1,
+            'title' => 'MTN Data',
+            'description' => 'AUTOSYNCAWUF',
+            'status' => 1,
+            'products' => json_encode([[
+                'plan' => 'MTN Fibre X 50GB',
+                'amount2' => 5000,
+                'data_size' => '50GB',
+                'product_id' => 3,
+                'variation_code' => 'fibre-50',
+                'pin' => '0000',
+            ]]),
+        ]);
+        config(['app.autoSyncUrl' => 'https://autosync.test/']);
+        Http::fake(['https://autosync.test/data' => Http::response([
+            'data' => ['transaction' => ['status' => 'pending']],
+        ])]);
+        $this->login();
+        auth('api')->user()->wallet = 10000;
+
+        $input = array_replace($this->input(), [
+            'subcategory_id' => $fibre->id,
+            'plan_id' => 'MTN Fibre X 50GB',
+            'amount' => 5000,
+            'phonenumber' => '234Ab123',
+        ]);
+        $headers = ['X-Transaction-Pin' => '1234'];
+        $this->postJson('/api/purchase/internet', $input, $headers)
+            ->assertOk()
+            ->assertJsonPath('status', 'pending');
+        $this->assertDatabaseHas('orders', ['phone' => '234Ab123']);
+        Http::assertSent(fn ($request) => $request->url() === 'https://autosync.test/data'
+            && $request['phone'] === '234Ab123');
+        $this->assertEquals(5000, User::find(1)->wallet);
+    }
+
+    public function test_smile_smart_number_still_requires_digits(): void
+    {
+        $this->login();
+        $input = array_replace($this->input(), ['phonenumber' => '234Ab123']);
+        $this->postJson('/api/purchase/internet', $input, ['X-Transaction-Pin' => '1234'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('phonenumber');
+        Http::assertNothingSent();
+    }
+
     public function test_catalogue_only_includes_fibre_x_from_autosync(): void
     {
         $this->smileFake();
