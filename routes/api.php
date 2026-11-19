@@ -83,6 +83,8 @@ Route::middleware('auth:api')->prefix('admin')->group(
         Route::get('whatsapp-transactions', [WhatsAppTransactionAdminController::class, 'index'])->middleware('admin.only');
         Route::put('whatsapp-transactions/{id}', [WhatsAppTransactionAdminController::class, 'update'])->middleware('admin.only');
         Route::post('whatsapp-transactions/{id}/refund', [WhatsAppTransactionAdminController::class, 'refund'])->middleware('admin.only');
+        Route::get('whatsapp-transactions/{id}/refund-recovery', [WhatsAppTransactionAdminController::class, 'previewRecovery'])->middleware('admin.only');
+        Route::post('whatsapp-transactions/{id}/refund-recovery', [WhatsAppTransactionAdminController::class, 'recoverRefund'])->middleware('admin.only');
 
         Route::resource('slides', SlidesController::class);
         Route::post('slides/uploadimage', [App\Http\Controllers\API\SlidesController::class, 'uploadImage'])->name('slides/uploadimage')->middleware('admin.only');

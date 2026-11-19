@@ -211,4 +211,82 @@ class WhatsAppTransactionAdminController extends BaseController
             'refunded_amount' => (float) $response->json('refunded_amount', 0),
         ], $response->json('message'));
     }
+
+    public function previewRecovery(Request $request, $id)
+    {
+        return $this->refundRecoveryRequest($request, $id, false);
+    }
+
+    public function recoverRefund(Request $request, $id)
+    {
+        $request->validate([
+            'note' => ['required', 'string', 'min:5', 'max:1000'],
+            'provider_success_confirmed' => ['required', 'accepted'],
+        ]);
+
+        return $this->refundRecoveryRequest($request, $id, true);
+    }
+
+    private function refundRecoveryRequest(Request $request, $id, bool $apply)
+    {
+        $order = WhatsAppOrder::findOrFail($id);
+        $oldStatus = $order->status;
+        $baseUrl = rtrim((string) config('services.whatsapp_bot_admin.base_url'), '/');
+        $secret = (string) config('services.whatsapp_bot_admin.secret');
+        if ($baseUrl === '' || $secret === '') {
+            return $this->sendError('WhatsApp refund recovery service is not configured.', '', 503);
+        }
+
+        try {
+            $client = Http::acceptJson()
+                ->withHeaders(['X-Swiftlink-Admin-Secret' => $secret])
+                ->timeout(20);
+            $url = "{$baseUrl}/internal/admin/orders/{$order->id}/refund-recovery";
+            $response = $apply
+                ? $client->post($url, [
+                    'reason' => $request->input('note'),
+                    'provider_success_confirmed' => true,
+                ])
+                : $client->get($url);
+        } catch (\Throwable $exception) {
+            Log::error('WhatsApp admin refund recovery request failed.', [
+                'order_id' => $order->id,
+                'apply' => $apply,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return $this->sendError(
+                'Could not confirm refund recovery. Refresh the transaction before retrying; retries cannot debit twice.',
+                '',
+                503
+            );
+        }
+
+        if (!$response->successful()) {
+            $errors = $response->json('errors');
+            $message = is_array($errors) ? collect($errors)->flatten()->first() : null;
+
+            return $this->sendError(
+                $message ?: $response->json('message') ?: 'Refund recovery failed.',
+                $errors ?: $response->json('message'),
+                in_array($response->status(), [401, 404, 422, 503], true) ? $response->status() : 502
+            );
+        }
+
+        if ($apply && !$response->json('already_recovered', false)) {
+            WhatsAppTransactionAdminLog::create([
+                'admin_user_id' => $request->user()->id,
+                'bot_order_id' => $order->id,
+                'old_status' => $oldStatus,
+                'new_status' => 'COMPLETED',
+                'note' => 'REFUND RECOVERY: '.$request->input('note'),
+            ]);
+        }
+
+        return $this->sendResponse([
+            'recovery_amount' => $response->json('recovery_amount'),
+            'wallet_balance' => $response->json('wallet_balance'),
+            'already_recovered' => $response->json('already_recovered', false),
+        ], $response->json('message') ?: 'Refund recovery preview retrieved.');
+    }
 }
