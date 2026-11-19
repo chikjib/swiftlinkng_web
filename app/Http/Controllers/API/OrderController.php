@@ -13139,7 +13139,7 @@ class OrderController extends BaseController
                 }
             } else if ($request->value == "reverse") {
                 $subcategory = Subcategory::find($pendingOrders->subcategory_id);
-                if ($subcategory && in_array((int) $subcategory->category_id, [1, 2, 3, 4, 6, 13], true)) {
+                if ($subcategory && in_array((int) $subcategory->category_id, [1, 2, 3, 4, 6, 11, 13], true)) {
 
 
                     $this->refundUser(
@@ -13397,7 +13397,7 @@ class OrderController extends BaseController
                 }
 
                 $subcategory = Subcategory::find($updOrder->subcategory_id);
-                if ($subcategory && in_array((int) $subcategory->category_id, [1, 2, 3, 4, 6, 13], true)) {
+                if ($subcategory && in_array((int) $subcategory->category_id, [1, 2, 3, 4, 6, 11, 13], true)) {
     
                     $response_msg = null;
                     
